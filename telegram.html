@@ -1,0 +1,5138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ПОРОВНУ — Делим счета в Telegram</title>
+  <!-- Official Telegram WebApp SDK & Supabase JS v2 -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ==========================================================================
+       1. DESIGN TOKENS & TELEGRAM ADAPTIVE THEMES (LIGHT / DARK)
+       ========================================================================== */
+    :root {
+      --tg-blue: #2481cc;
+      --tg-blue-hover: #1b6eb2;
+      --tg-blue-soft: rgba(36, 129, 204, 0.12);
+      --green: #22c55e;
+      --green-dark: #15803d;
+      --green-soft: rgba(34, 197, 94, 0.13);
+      --red: #ef4444;
+      --red-soft: rgba(239, 68, 68, 0.12);
+      --amber: #f59e0b;
+      --amber-dark: #b45309;
+      --amber-soft: rgba(245, 158, 11, 0.15);
+      --purple: #8b5cf6;
+      --purple-soft: rgba(139, 92, 246, 0.14);
+
+      /* Light Telegram Palette */
+      --outer-bg: #e2eaf3;
+      --bg: #f1f4f8;
+      --surface: #ffffff;
+      --surface-2: #f5f7fa;
+      --surface-elevated: #ffffff;
+      --text: #111827;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-strong: rgba(15, 23, 42, 0.15);
+      --shadow-sm: 0 2px 8px rgba(15, 23, 42, 0.05);
+      --shadow-md: 0 12px 28px rgba(15, 23, 42, 0.12);
+      --shadow-phone: 0 24px 64px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(15, 23, 42, 0.07);
+      --backdrop: rgba(15, 23, 42, 0.54);
+
+      --radius-sm: 10px;
+      --radius-md: 14px;
+      --radius-lg: 16px;
+      --font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --tg-blue: #3b9eff;
+      --tg-blue-hover: #58adff;
+      --tg-blue-soft: rgba(59, 158, 255, 0.16);
+      --green: #34d399;
+      --green-dark: #34d399;
+      --green-soft: rgba(52, 211, 153, 0.15);
+      --red: #f87171;
+      --red-soft: rgba(248, 113, 113, 0.16);
+      --amber: #fbbf24;
+      --amber-dark: #fbbf24;
+      --amber-soft: rgba(251, 191, 36, 0.16);
+      --purple: #a78bfa;
+      --purple-soft: rgba(167, 139, 250, 0.17);
+
+      /* Dark Telegram Palette */
+      --outer-bg: #0b1118;
+      --bg: #17212b;
+      --surface: #212d3b;
+      --surface-2: #1a2531;
+      --surface-elevated: #273545;
+      --text: #f3f6fa;
+      --text-secondary: #98a9bc;
+      --text-muted: #6c7f94;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.38);
+      --shadow-phone: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.09);
+      --backdrop: rgba(4, 9, 15, 0.74);
+    }
+
+    /* ==========================================================================
+       2. BASE RESET & RESPONSIVE MOBILE-FIRST SHELL
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: var(--font);
+      background: var(--outer-bg);
+      color: var(--text);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, input, select {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: none;
+      padding: 0;
+    }
+
+    .viewport-wrapper {
+      height: 100dvh;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .tma-shell {
+      position: relative;
+      width: 100%;
+      max-width: 450px;
+      height: 100dvh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: background 0.22s ease, color 0.22s ease;
+    }
+
+    @media (min-width: 520px) {
+      .viewport-wrapper {
+        padding: 16px;
+      }
+      .tma-shell {
+        height: min(92dvh, 880px);
+        border-radius: 28px;
+        box-shadow: var(--shadow-phone);
+      }
+    }
+
+    /* ==========================================================================
+       3. APP HEADERS & LIVE STATUS INDICATOR
+       ========================================================================== */
+    .app-header {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px 10px;
+      z-index: 20;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .header-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--tg-blue) 0%, #1562a6 100%);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(36, 129, 204, 0.3);
+      flex-shrink: 0;
+    }
+
+    .brand-name-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-name {
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      line-height: 1.1;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 3px var(--green-soft);
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .live-dot.offline {
+      background: var(--amber);
+      box-shadow: 0 0 0 3px var(--amber-soft);
+    }
+
+    .brand-sub {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .user-profile-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 99px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      max-width: 145px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .user-profile-pill:hover {
+      border-color: var(--tg-blue);
+      background: var(--tg-blue-soft);
+    }
+
+    .user-profile-pill span.u-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 11px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      transition: transform 0.12s, background 0.15s, color 0.15s;
+    }
+
+    .icon-btn:hover {
+      background: var(--tg-blue-soft);
+      color: var(--tg-blue);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Event Detail Header */
+    .event-nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      margin-bottom: 7px;
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px 5px 7px;
+      border-radius: 10px;
+      background: var(--tg-blue-soft);
+      color: var(--tg-blue);
+      font-size: 13px;
+      font-weight: 700;
+      transition: transform 0.12s;
+    }
+
+    .back-btn:active {
+      transform: scale(0.95);
+    }
+
+    .header-share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 10px;
+      background: var(--tg-blue);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(36, 129, 204, 0.28);
+    }
+
+    .header-share-btn:active {
+      transform: scale(0.95);
+    }
+
+    .event-identity-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .event-title-trigger {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+      flex: 1;
+      text-align: left;
+      padding: 2px 0;
+    }
+
+    .event-header-emoji {
+      font-size: 23px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .event-header-meta {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .event-header-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.2;
+    }
+
+    .event-header-date {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Horizontal "Смотрю как:" Perspective Switcher */
+    .viewer-strip-wrap {
+      margin-top: 9px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .viewer-strip-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .viewer-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+
+    .viewer-pills::-webkit-scrollbar {
+      display: none;
+    }
+
+    .viewer-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px 4px 5px;
+      border-radius: 99px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .viewer-pill.active {
+      background: var(--tg-blue-soft);
+      border-color: var(--tg-blue);
+      color: var(--tg-blue);
+    }
+
+    /* ==========================================================================
+       4. SCROLL VIEWPORT, CARDS, BUTTONS, AVATARS, LOADERS
+       ========================================================================== */
+    .app-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 14px 14px 28px;
+      scroll-behavior: smooth;
+    }
+
+    .app-content.with-fab-pad {
+      padding-bottom: 92px;
+    }
+
+    .app-content::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .app-content::-webkit-scrollbar-thumb {
+      background: var(--border-strong);
+      border-radius: 99px;
+    }
+
+    .view-animate {
+      animation: viewFade 0.18s ease;
+    }
+
+    @keyframes viewFade {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 15px 2px 8px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .section-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 10px;
+      transition: background 0.2s, border-color 0.2s, transform 0.12s;
+    }
+
+    .val-pos { color: var(--green-dark); }
+    .val-neg { color: var(--red); }
+    .val-zero { color: var(--text-secondary); }
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* Avatars */
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      color: #ffffff;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .avatar-xs { width: 21px; height: 21px; font-size: 9px; }
+    .avatar-sm { width: 25px; height: 25px; font-size: 10.5px; }
+    .avatar-md { width: 32px; height: 32px; font-size: 12px; }
+    .avatar-lg { width: 40px; height: 40px; font-size: 14.5px; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 42px;
+      padding: 10px 14px;
+      border-radius: 13px;
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform 0.12s ease, background 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      box-shadow: none !important;
+    }
+
+    .btn-primary {
+      background: var(--tg-blue);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(36, 129, 204, 0.28);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--tg-blue-hover);
+    }
+
+    .btn-secondary {
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: var(--tg-blue-soft);
+      border-color: var(--tg-blue);
+    }
+
+    .btn-success {
+      background: var(--green);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(34, 197, 94, 0.24);
+    }
+
+    .btn-soft-blue {
+      background: var(--tg-blue-soft);
+      color: var(--tg-blue);
+    }
+
+    .btn-soft-green {
+      background: var(--green-soft);
+      color: var(--green-dark);
+    }
+
+    .btn-soft-red {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .btn-sm {
+      min-height: 34px;
+      padding: 6px 11px;
+      font-size: 12px;
+      border-radius: 10px;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    /* Spinner */
+    .spinner-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 56px 20px;
+      gap: 12px;
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border: 3px solid var(--tg-blue-soft);
+      border-top-color: var(--tg-blue);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ==========================================================================
+       5. HOME SCREEN: "МОИ СОБЫТИЯ"
+       ========================================================================== */
+    .filter-pills {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 3px;
+      border-radius: 13px;
+      gap: 3px;
+      margin-bottom: 12px;
+    }
+
+    .filter-pill {
+      flex: 1;
+      padding: 8px 6px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+
+    .filter-pill.active {
+      background: var(--tg-blue);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(36, 129, 204, 0.28);
+    }
+
+    .event-card {
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .event-card:hover {
+      border-color: var(--tg-blue);
+    }
+
+    .event-card:active {
+      transform: scale(0.985);
+    }
+
+    .event-card.is-closed {
+      border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .event-card-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+    }
+
+    .event-emoji-box {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 23px;
+      flex-shrink: 0;
+    }
+
+    .event-card.is-closed .event-emoji-box {
+      background: var(--green-soft);
+      border-color: rgba(34, 197, 94, 0.25);
+    }
+
+    .event-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .event-card-title {
+      font-size: 15.5px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .event-card-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .event-card-total-col {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .event-card-total {
+      font-size: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .event-card-open {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--tg-blue);
+      margin-top: 3px;
+    }
+
+    .progress-track {
+      height: 8px;
+      border-radius: 99px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .progress-track.lg {
+      height: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--green) 0%, #10b981 100%);
+      border-radius: 99px;
+      transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .event-card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .event-progress-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 99px;
+    }
+
+    .status-pill-debt {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    .status-pill-credit {
+      background: var(--green-soft);
+      color: var(--green-dark);
+    }
+
+    .status-pill-closed {
+      background: var(--green-soft);
+      color: var(--green-dark);
+    }
+
+    .status-pill-neutral {
+      background: var(--surface-2);
+      color: var(--text-secondary);
+    }
+
+    .events-footer {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border-strong);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .fab-wrap {
+      position: absolute;
+      bottom: 16px;
+      left: 14px;
+      right: 14px;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    .fab-btn {
+      pointer-events: auto;
+      width: 100%;
+      min-height: 48px;
+      border-radius: 15px;
+      font-size: 15px;
+      font-weight: 700;
+      box-shadow: 0 8px 22px rgba(36, 129, 204, 0.36);
+    }
+
+    /* ==========================================================================
+       6. EVENT DETAIL: TAB 1 ("ТРАТЫ")
+       ========================================================================== */
+    .unlinked-banner {
+      background: var(--amber-soft);
+      border: 1px solid rgba(245, 158, 11, 0.38);
+      border-radius: 14px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--amber-dark);
+    }
+
+    .card-hero {
+      background: linear-gradient(135deg, var(--tg-blue) 0%, #1762a3 100%);
+      color: #ffffff;
+      border: none;
+      padding: 15px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    [data-theme="dark"] .card-hero {
+      background: linear-gradient(135deg, #2478c5 0%, #144a82 100%);
+    }
+
+    .card-hero::after {
+      content: "";
+      position: absolute;
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      top: -45px;
+      right: -30px;
+      pointer-events: none;
+    }
+
+    .hero-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-stat-box {
+      background: rgba(255, 255, 255, 0.14);
+      border-radius: 12px;
+      padding: 9px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .hero-stat-box.highlight {
+      background: rgba(255, 255, 255, 0.96);
+      color: #111827;
+    }
+
+    [data-theme="dark"] .hero-stat-box.highlight {
+      background: rgba(15, 23, 35, 0.85);
+      color: #f3f6fa;
+    }
+
+    .hero-stat-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      opacity: 0.86;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hero-stat-box.highlight .hero-stat-label {
+      color: var(--text-secondary);
+      opacity: 1;
+    }
+
+    .hero-stat-val {
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .hero-bottom-strip {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 600;
+      opacity: 0.94;
+      position: relative;
+      z-index: 1;
+    }
+
+    .expense-card {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      cursor: pointer;
+    }
+
+    .expense-card:hover {
+      border-color: var(--tg-blue);
+    }
+
+    .expense-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+    }
+
+    .cat-icon-box {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .expense-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .expense-title {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .expense-payer {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .expense-amount-col {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .expense-amount {
+      font-size: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .expense-viewer-share {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--tg-blue);
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+
+    .expense-viewer-share.muted {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .expense-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 9px;
+      border-top: 1px dashed var(--border);
+      flex-wrap: wrap;
+    }
+
+    .split-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 9px;
+      border-radius: 99px;
+    }
+
+    .split-badge-all {
+      background: var(--tg-blue-soft);
+      color: var(--tg-blue);
+    }
+
+    .split-badge-selective {
+      background: var(--amber-soft);
+      color: var(--amber-dark);
+    }
+
+    .split-badge-manual {
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .manual-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .manual-share-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .manual-share-chip span.chip-amt {
+      color: var(--purple);
+      font-weight: 800;
+    }
+
+    .split-names-list {
+      font-size: 11.5px;
+      color: var(--text-secondary);
+      width: 100%;
+      line-height: 1.35;
+    }
+
+    .card-mini-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-left: auto;
+    }
+
+    .mini-icon-action {
+      width: 31px;
+      height: 31px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      background: var(--surface-2);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .mini-icon-action:hover {
+      background: var(--tg-blue-soft);
+      color: var(--tg-blue);
+    }
+
+    .mini-icon-action.danger:hover {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    /* ==========================================================================
+       7. EVENT DETAIL: TAB 2 ("ИТОГИ")
+       ========================================================================== */
+    .progress-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .progress-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .progress-title {
+      font-size: 13.5px;
+      font-weight: 800;
+    }
+
+    .progress-sub {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .mini-bill-card {
+      border: 1.5px solid var(--tg-blue);
+      background: linear-gradient(180deg, var(--tg-blue-soft) 0%, var(--surface) 44%);
+    }
+
+    .mini-bill-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .mini-bill-badge {
+      font-size: 10.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--tg-blue);
+      background: var(--surface);
+      padding: 4px 9px;
+      border-radius: 99px;
+      border: 1px solid var(--tg-blue-soft);
+    }
+
+    .mini-bill-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      padding: 11px;
+      margin-top: 8px;
+    }
+
+    .mini-bill-item.is-paid {
+      background: var(--green-soft);
+      border-color: rgba(34, 197, 94, 0.35);
+    }
+
+    .transfer-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .transfer-card.is-paid {
+      background: var(--green-soft);
+      border-color: rgba(34, 197, 94, 0.38);
+    }
+
+    .transfer-route {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .transfer-people {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .person-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13.5px;
+      font-weight: 700;
+    }
+
+    .arrow-badge {
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .transfer-sum {
+      font-size: 16px;
+      font-weight: 800;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .transfer-card.is-paid .transfer-sum {
+      color: var(--green-dark);
+    }
+
+    .sbp-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 10px;
+      flex-wrap: wrap;
+    }
+
+    .transfer-card.is-paid .sbp-box {
+      background: var(--surface);
+    }
+
+    .sbp-details {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .sbp-bank-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .bank-badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 7px;
+      white-space: nowrap;
+    }
+
+    .bank-tbank { background: #ffdd2d; color: #1f1f1f; }
+    .bank-sber { background: #21a038; color: #ffffff; }
+    .bank-alfa { background: #ef3124; color: #ffffff; }
+    .bank-vtb { background: #002882; color: #ffffff; }
+    .bank-ozon { background: #005bff; color: #ffffff; }
+    .bank-raif { background: #fee600; color: #1f1f1f; }
+    .bank-yandex { background: #6b21a8; color: #ffffff; }
+    .bank-other { background: var(--surface-elevated); color: var(--text); border: 1px solid var(--border-strong); }
+
+    .sbp-phone {
+      font-size: 13px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .sbp-missing {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.35;
+    }
+
+    .transfer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .paid-stamp {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--green-dark);
+    }
+
+    .collapse-trigger {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .collapse-chevron {
+      transition: transform 0.2s ease;
+      color: var(--text-secondary);
+    }
+
+    .collapse-chevron.open {
+      transform: rotate(180deg);
+    }
+
+    .balance-table {
+      margin-top: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .balance-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      padding: 9px 10px;
+      background: var(--surface-2);
+      border-radius: 12px;
+      align-items: center;
+    }
+
+    .balance-person {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 0;
+    }
+
+    .balance-person-meta {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    .balance-net {
+      font-size: 14px;
+      font-weight: 800;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    /* ==========================================================================
+       8. EVENT DETAIL: TAB 3 ("УЧАСТНИКИ")
+       ========================================================================== */
+    .invite-card {
+      background: linear-gradient(145deg, var(--surface) 0%, var(--tg-blue-soft) 100%);
+      border: 1px solid rgba(36, 129, 204, 0.25);
+    }
+
+    .invite-link-box {
+      margin: 10px 0 12px;
+      padding: 9px 11px;
+      background: var(--surface);
+      border: 1px dashed var(--tg-blue);
+      border-radius: 11px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--tg-blue);
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .invite-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .participant-card {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .participant-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .participant-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .participant-info {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .participant-name-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .participant-name {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .org-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: var(--tg-blue-soft);
+      color: var(--tg-blue);
+      text-transform: uppercase;
+    }
+
+    .tg-linked-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: var(--purple-soft);
+      color: var(--purple);
+    }
+
+    .participant-sbp-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+      flex-wrap: wrap;
+    }
+
+    .participant-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .p-metric-box {
+      background: var(--surface-2);
+      border-radius: 10px;
+      padding: 6px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .p-metric-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .p-metric-val {
+      font-size: 12.5px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    /* ==========================================================================
+       9. BOTTOM NAVIGATION BAR
+       ========================================================================== */
+    .bottom-nav {
+      flex-shrink: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+      z-index: 25;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 4px;
+      border-radius: 12px;
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      transition: color 0.15s, background 0.15s;
+      position: relative;
+    }
+
+    .nav-item.active {
+      color: var(--tg-blue);
+      background: var(--tg-blue-soft);
+    }
+
+    .nav-badge {
+      position: absolute;
+      top: 3px;
+      right: calc(50% - 23px);
+      min-width: 17px;
+      height: 17px;
+      padding: 0 5px;
+      border-radius: 99px;
+      background: var(--red);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ==========================================================================
+       10. MODALS, BOTTOM SHEETS, MANUAL SPLIT EDITOR & INVITE JOIN MODAL
+       ========================================================================== */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: var(--backdrop);
+      z-index: 50;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      backdrop-filter: blur(3px);
+      animation: fadeIn 0.16s ease;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-overlay.center-modal {
+      align-items: center;
+      padding: 16px;
+    }
+
+    .bottom-sheet {
+      width: 100%;
+      max-height: 94%;
+      background: var(--surface);
+      border-radius: 22px 22px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.24);
+      animation: slideUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .center-dialog {
+      width: 100%;
+      max-width: 400px;
+      max-height: 90%;
+      background: var(--surface);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-md);
+      animation: popIn 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .sheet-handle {
+      width: 38px;
+      height: 4px;
+      border-radius: 99px;
+      background: var(--border-strong);
+      margin: 10px auto 4px;
+      flex-shrink: 0;
+    }
+
+    .sheet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .sheet-title {
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .sheet-body {
+      padding: 14px 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .sheet-footer {
+      padding: 12px 16px calc(14px + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+
+    .form-group {
+      margin-bottom: 13px;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border-strong);
+      font-size: 15px;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .form-input:focus, .form-select:focus {
+      border-color: var(--tg-blue);
+      background: var(--surface);
+    }
+
+    .amount-input-wrap {
+      position: relative;
+    }
+
+    .amount-input-wrap .form-input {
+      font-size: 20px;
+      font-weight: 800;
+      padding-right: 36px;
+    }
+
+    .currency-suffix {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    /* Segmented Control */
+    .segmented-control {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: 13px;
+      padding: 4px;
+    }
+
+    .seg-btn {
+      padding: 9px 10px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 800;
+      color: var(--text-secondary);
+      transition: all 0.16s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .seg-btn.active {
+      background: var(--tg-blue);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(36, 129, 204, 0.28);
+    }
+
+    /* Emoji Picker (8 emojis in 4x2 grid) */
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+    }
+
+    .emoji-option {
+      height: 42px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      font-size: 21px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.12s, border-color 0.15s, background 0.15s;
+    }
+
+    .emoji-option.active {
+      background: var(--tg-blue-soft);
+      border-color: var(--tg-blue);
+      transform: scale(1.04);
+    }
+
+    /* Initial Friends Chips */
+    .add-member-row {
+      display: flex;
+      gap: 7px;
+    }
+
+    .member-chips-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .member-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 99px;
+      background: var(--tg-blue-soft);
+      color: var(--tg-blue);
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .member-chip-remove {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: rgba(36, 129, 204, 0.2);
+      color: var(--tg-blue);
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Quick Title Suggestion Chips */
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .tag-chip {
+      padding: 5px 9px;
+      border-radius: 10px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: all 0.15s;
+    }
+
+    .tag-chip:hover, .tag-chip.active {
+      background: var(--tg-blue-soft);
+      border-color: var(--tg-blue);
+      color: var(--tg-blue);
+    }
+
+    /* Equal Split Checklist */
+    .split-quick-btns {
+      display: flex;
+      gap: 10px;
+    }
+
+    .text-link-btn {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--tg-blue);
+    }
+
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .check-person {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .check-person.checked {
+      background: var(--tg-blue-soft);
+      border-color: var(--tg-blue);
+    }
+
+    .custom-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      border: 2px solid var(--border-strong);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .check-person.checked .custom-checkbox {
+      background: var(--tg-blue);
+      border-color: var(--tg-blue);
+      color: #ffffff;
+    }
+
+    .check-person-name {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Manual Split Editor */
+    .manual-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .manual-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border);
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .manual-row.has-value {
+      border-color: rgba(139, 92, 246, 0.4);
+      background: var(--purple-soft);
+    }
+
+    .manual-person-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .manual-person-name {
+      font-size: 13.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .manual-input-wrap {
+      position: relative;
+      width: 118px;
+      flex-shrink: 0;
+    }
+
+    .manual-amount-input {
+      width: 100%;
+      min-height: 36px;
+      padding: 6px 26px 6px 10px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1.5px solid var(--border-strong);
+      font-size: 14.5px;
+      font-weight: 800;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      outline: none;
+    }
+
+    .manual-amount-input:focus {
+      border-color: var(--tg-blue);
+    }
+
+    .manual-rub-suffix {
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Validation Status Bar */
+    .validation-bar {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+    }
+
+    .validation-bar.state-ok {
+      background: var(--green-soft);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: var(--green-dark);
+    }
+
+    .validation-bar.state-under {
+      background: var(--amber-soft);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: var(--amber-dark);
+    }
+
+    .validation-bar.state-over {
+      background: var(--red-soft);
+      border-color: rgba(239, 68, 68, 0.45);
+      color: var(--red);
+    }
+
+    .validation-sub {
+      font-size: 11.5px;
+      font-weight: 600;
+      opacity: 0.85;
+      white-space: nowrap;
+    }
+
+    /* Claim Slot Cards in Deep-Link Join Modal */
+    .claim-slot-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: var(--surface-2);
+      border: 1.5px solid var(--border-strong);
+      margin-bottom: 7px;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .claim-slot-btn:hover {
+      border-color: var(--tg-blue);
+      background: var(--tg-blue-soft);
+    }
+
+    /* ==========================================================================
+       11. TOASTS, EMPTY STATES & KEYFRAMES
+       ========================================================================== */
+    .toast-container {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      right: 14px;
+      z-index: 100;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toast {
+      background: #111827;
+      color: #ffffff;
+      padding: 10px 15px;
+      border-radius: 13px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.26);
+      max-width: 100%;
+      text-align: center;
+      animation: toastIn 0.2s ease;
+    }
+
+    [data-theme="dark"] .toast {
+      background: #f3f6fa;
+      color: #111827;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 32px 18px;
+      color: var(--text-secondary);
+    }
+
+    .empty-icon {
+      font-size: 40px;
+      margin-bottom: 8px;
+    }
+
+    .empty-title {
+      font-size: 15.5px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .empty-desc {
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+    @keyframes toastIn { from { opacity: 0; transform: translateY(-10px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  </style>
+</head>
+<body>
+  <div class="viewport-wrapper">
+    <div class="tma-shell" id="appShell">
+
+      <!-- Toast Notifications -->
+      <div class="toast-container" id="toastContainer"></div>
+
+      <!-- Dynamic Header -->
+      <header class="app-header" id="appHeader"></header>
+
+      <!-- Main Scrollable Viewport -->
+      <main class="app-content" id="mainContent"></main>
+
+      <!-- Floating Action Button (Visible on Home Screen) -->
+      <div class="fab-wrap" id="fabWrap"></div>
+
+      <!-- Bottom Navigation Bar (Visible inside an Event) -->
+      <nav class="bottom-nav" id="bottomNav" style="display: none;" aria-label="Навигация по событию">
+        <button class="nav-item active" data-tab="expenses">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+            <path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/>
+          </svg>
+          <span>Траты</span>
+        </button>
+
+        <button class="nav-item" data-tab="summary">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 3h5v5"/><path d="M4 20L21 3"/>
+            <path d="M21 16v5h-5"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/>
+          </svg>
+          <span>Итоги</span>
+          <span class="nav-badge" id="unpaidBadge" style="display: none;">0</span>
+        </button>
+
+        <button class="nav-item" data-tab="participants">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span>Участники</span>
+        </button>
+      </nav>
+
+      <!-- ====================================================================
+           MODAL 1: CREATE NEW EVENT (BOTTOM SHEET)
+           ==================================================================== -->
+      <div class="modal-overlay" id="createEventModal">
+        <div class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="createEventTitle">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div class="sheet-title" id="createEventTitle">Новое событие</div>
+            <button class="icon-btn" data-close-modal="createEventModal" aria-label="Закрыть">✕</button>
+          </div>
+          <div class="sheet-body">
+            <div class="form-group">
+              <label class="form-label" for="newEventTitleInput">Название события</label>
+              <input type="text" id="newEventTitleInput" class="form-input" placeholder="Например: Поездка на природу" maxlength="60" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="newEventDateInput">Дата встречи</label>
+              <input type="date" id="newEventDateInput" class="form-input" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Иконка события</label>
+              <div class="emoji-grid" id="newEventEmojiGrid"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="newEventCreatorNameInput">Ваше имя (организатор)</label>
+              <input type="text" id="newEventCreatorNameInput" class="form-input" placeholder="Ваше имя" maxlength="32" />
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 13px;">
+              <div>
+                <label class="form-label" for="newEventCreatorPhoneInput">Ваш телефон СБП</label>
+                <input type="tel" id="newEventCreatorPhoneInput" class="form-input" placeholder="+7 999 123-45-67" maxlength="22" style="font-size: 13.5px;" />
+              </div>
+              <div>
+                <label class="form-label" for="newEventCreatorBankSelect">Банк СБП</label>
+                <select id="newEventCreatorBankSelect" class="form-select" style="font-size: 13.5px;">
+                  <option value="">— Не указан —</option>
+                  <option value="Т-Банк">Т-Банк</option>
+                  <option value="Сбер">Сбер</option>
+                  <option value="Альфа">Альфа</option>
+                  <option value="ВТБ">ВТБ</option>
+                  <option value="Райффайзен">Райффайзен</option>
+                  <option value="Озон Банк">Озон Банк</option>
+                  <option value="Яндекс Пэй">Яндекс Пэй</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 4px;">
+              <label class="form-label" for="newEventFriendInput">
+                <span>Добавить друзей сразу (необязательно)</span>
+                <span id="newEventFriendsCount" style="color: var(--tg-blue);">0 друзей</span>
+              </label>
+              <div class="add-member-row">
+                <input type="text" id="newEventFriendInput" class="form-input" placeholder="Имя друга (Enter — добавить)" maxlength="32" />
+                <button type="button" class="btn btn-soft-blue" id="addInitialFriendBtn" style="flex-shrink: 0; padding: 0 14px;">+ Добавить</button>
+              </div>
+              <div class="member-chips-list" id="newEventFriendsChips"></div>
+            </div>
+          </div>
+          <div class="sheet-footer">
+            <button type="button" class="btn btn-primary btn-block" id="confirmCreateEventBtn">Создать событие</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           MODAL 2: EDIT / DELETE EVENT
+           ==================================================================== -->
+      <div class="modal-overlay center-modal" id="editEventModal">
+        <div class="center-dialog" role="dialog" aria-modal="true">
+          <div class="sheet-header">
+            <div class="sheet-title">Настройки события</div>
+            <button class="icon-btn" data-close-modal="editEventModal" aria-label="Закрыть">✕</button>
+          </div>
+          <div class="sheet-body">
+            <div class="form-group">
+              <label class="form-label" for="editEventTitleInput">Название события</label>
+              <input type="text" id="editEventTitleInput" class="form-input" maxlength="60" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="editEventDateInput">Дата события</label>
+              <input type="date" id="editEventDateInput" class="form-input" />
+            </div>
+            <div class="form-group" style="margin-bottom: 8px;">
+              <label class="form-label">Эмодзи</label>
+              <div class="emoji-grid" id="editEventEmojiGrid"></div>
+            </div>
+            <button type="button" class="btn btn-soft-red btn-sm btn-block" id="deleteCurrentEventBtn" style="margin-top: 12px;">
+              Удалить событие из базы
+            </button>
+          </div>
+          <div class="sheet-footer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="button" class="btn btn-secondary" data-close-modal="editEventModal">Отмена</button>
+            <button type="button" class="btn btn-primary" id="saveEventSettingsBtn">Сохранить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           MODAL 3: ADD / EDIT EXPENSE (EQUAL & MANUAL CUSTOM SPLIT)
+           ==================================================================== -->
+      <div class="modal-overlay" id="expenseModal">
+        <div class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="expenseModalTitle">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div class="sheet-title" id="expenseModalTitle">Новая трата</div>
+            <button class="icon-btn" data-close-modal="expenseModal" aria-label="Закрыть">✕</button>
+          </div>
+          <div class="sheet-body">
+            <input type="hidden" id="expIdInput" />
+
+            <div class="form-group">
+              <label class="form-label" for="expTitleInput">Что купили?</label>
+              <input type="text" id="expTitleInput" class="form-input" placeholder="Например: Мясо и угли" maxlength="64" />
+              <div class="tags-row" id="quickExpenseTagsRow"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="expAmountInput">Общая сумма чека</label>
+              <div class="amount-input-wrap">
+                <input type="number" id="expAmountInput" class="form-input" placeholder="0" min="0" step="0.01" inputmode="decimal" />
+                <span class="currency-suffix">₽</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="expPayerSelect">Кто оплатил?</label>
+              <select id="expPayerSelect" class="form-select"></select>
+            </div>
+
+            <!-- Segmented Control: Поровну / Вручную -->
+            <div class="form-group">
+              <label class="form-label">Как делим чек?</label>
+              <div class="segmented-control" role="tablist">
+                <button type="button" class="seg-btn active" id="modeEqualBtn" data-split-mode="equal">
+                  ⚖️ Поровну
+                </button>
+                <button type="button" class="seg-btn" id="modeManualBtn" data-split-mode="manual">
+                  ✏️ Вручную
+                </button>
+              </div>
+            </div>
+
+            <!-- Panel A: Equal Split Checklist -->
+            <div id="equalSplitPanel" class="form-group" style="margin-bottom: 4px;">
+              <div class="form-label">
+                <span>На кого делим?</span>
+                <div class="split-quick-btns">
+                  <button type="button" class="text-link-btn" id="selectAllSplitBtn">Выбрать всех</button>
+                  <button type="button" class="text-link-btn" id="clearAllSplitBtn" style="color: var(--text-secondary);">Снять всех</button>
+                </div>
+              </div>
+              <div class="checklist-grid" id="splitChecklist"></div>
+            </div>
+
+            <!-- Panel B: Manual Exact Shares Editor -->
+            <div id="manualSplitPanel" class="form-group" style="display: none; margin-bottom: 4px;">
+              <div class="form-label">
+                <span>Сумма на каждого</span>
+                <div class="split-quick-btns">
+                  <button type="button" class="text-link-btn" id="distributeRemainderBtn">Распределить остаток поровну</button>
+                  <button type="button" class="text-link-btn" id="clearManualBtn" style="color: var(--text-secondary);">Очистить</button>
+                </div>
+              </div>
+              <div class="manual-list" id="manualSplitList"></div>
+            </div>
+          </div>
+
+          <div class="sheet-footer">
+            <div class="validation-bar" id="expenseValidationBar">
+              <span>Введите сумму чека</span>
+              <span class="validation-sub">0 ₽</span>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn btn-soft-red" id="deleteExpenseInModalBtn" style="display: none; padding: 0 14px;" aria-label="Удалить трату">
+                🗑️
+              </button>
+              <button type="button" class="btn btn-primary" id="saveExpenseBtn" style="flex: 1;">Сохранить трату</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           MODAL 4: ADD / EDIT PARTICIPANT & SBP DETAILS
+           ==================================================================== -->
+      <div class="modal-overlay" id="participantModal">
+        <div class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="participantModalTitle">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div class="sheet-title" id="participantModalTitle">Участник и СБП</div>
+            <button class="icon-btn" data-close-modal="participantModal" aria-label="Закрыть">✕</button>
+          </div>
+          <div class="sheet-body">
+            <input type="hidden" id="partIdInput" />
+
+            <div class="form-group">
+              <label class="form-label" for="partNameInput">Имя участника</label>
+              <input type="text" id="partNameInput" class="form-input" placeholder="Например: Екатерина" maxlength="32" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="partPhoneInput">Телефон для СБП (необязательно)</label>
+              <input type="tel" id="partPhoneInput" class="form-input" placeholder="+7 999 123-45-67" maxlength="22" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="partBankSelect">Банк СБП</label>
+              <select id="partBankSelect" class="form-select">
+                <option value="">— Не указан —</option>
+                <option value="Т-Банк">Т-Банк</option>
+                <option value="Сбер">Сбер</option>
+                <option value="Альфа">Альфа</option>
+                <option value="ВТБ">ВТБ</option>
+                <option value="Райффайзен">Райффайзен</option>
+                <option value="Озон Банк">Озон Банк</option>
+                <option value="Яндекс Пэй">Яндекс Пэй</option>
+                <option value="__custom__">Другой банк (ввести вручную)</option>
+              </select>
+            </div>
+
+            <div class="form-group" id="customBankGroup" style="display: none;">
+              <label class="form-label" for="partCustomBankInput">Название банка</label>
+              <input type="text" id="partCustomBankInput" class="form-input" placeholder="Например: Газпромбанк" maxlength="28" />
+            </div>
+          </div>
+          <div class="sheet-footer">
+            <button type="button" class="btn btn-primary btn-block" id="saveParticipantBtn">Сохранить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           MODAL 5: DEEP-LINK INVITE — "ПРИСОЕДИНИТЬСЯ К СОБЫТИЮ"
+           ==================================================================== -->
+      <div class="modal-overlay" id="joinEventModal">
+        <div class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="joinEventModalTitle">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+            <div class="sheet-title" id="joinEventModalTitle">Присоединиться к событию</div>
+            <button class="icon-btn" data-close-modal="joinEventModal" aria-label="Закрыть">✕</button>
+          </div>
+          <div class="sheet-body" id="joinEventModalBody"></div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           MODAL 6: GUEST PROFILE NAME EDITOR (WHEN OPENED IN BROWSER)
+           ==================================================================== -->
+      <div class="modal-overlay center-modal" id="guestProfileModal">
+        <div class="center-dialog" role="dialog" aria-modal="true">
+          <div class="sheet-header">
+            <div class="sheet-title">Ваш профиль</div>
+            <button class="icon-btn" data-close-modal="guestProfileModal" aria-label="Закрыть">✕</button>
+          </div>
+          <div class="sheet-body">
+            <p style="margin: 0 0 12px; font-size: 13px; color: var(--text-secondary); line-height: 1.45;" id="profileModeNote"></p>
+            <div class="form-group" style="margin-bottom: 4px;">
+              <label class="form-label" for="guestNameInput">Отображаемое имя</label>
+              <input type="text" id="guestNameInput" class="form-input" placeholder="Ваше имя" maxlength="32" />
+            </div>
+          </div>
+          <div class="sheet-footer" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button type="button" class="btn btn-secondary" data-close-modal="guestProfileModal">Отмена</button>
+            <button type="button" class="btn btn-primary" id="saveGuestProfileBtn">Сохранить</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ====================================================================
+           MODAL 7: CUSTOM CONFIRMATION DIALOG (NO alert/confirm)
+           ==================================================================== -->
+      <div class="modal-overlay center-modal" id="confirmModal">
+        <div class="center-dialog" role="dialog" aria-modal="true">
+          <div class="sheet-header">
+            <div class="sheet-title" id="confirmTitle">Подтверждение</div>
+            <button class="icon-btn" data-close-modal="confirmModal" aria-label="Закрыть">✕</button>
+          </div>
+          <div class="sheet-body">
+            <p id="confirmMessage" style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-secondary);"></p>
+          </div>
+          <div class="sheet-footer" id="confirmActions" style="display: flex; gap: 8px;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ==========================================================================
+     * ПОРОВНУ — Production Telegram Mini App (Telegram WebApp SDK + Supabase)
+     * ==========================================================================
+     */
+    const SUPABASE_URL = 'https://kvqmjwtiamkbndqmkhrb.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_Tee5Ezn9SJLW-EZp3uf8BQ_cTev1CzF';
+    const BOT_USERNAME = 'porovnu_rus_bot';
+    const APP_SHORT_NAME = 'app';
+
+    (function () {
+      'use strict';
+
+      /* ------------------------------------------------------------------------
+         1. SUPABASE CLIENT & TELEGRAM WEBAPP SDK INITIALIZATION
+         ------------------------------------------------------------------------ */
+      const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+      const GUEST_USER_STORAGE_KEY = 'porovnu_guest_user_v1';
+      const SAVED_EVENTS_STORAGE_KEY = 'porovnu_saved_events';
+      const THEME_STORAGE_KEY = 'porovnu_theme_v1';
+
+      const EVENT_EMOJIS = ['🌲', '🧖', '🍕', '✈️', '🎉', '🏕️', '🍻', '🚗'];
+
+      const QUICK_EXPENSE_PRESETS = [
+        { icon: '🥩', label: 'Мясо и продукты' },
+        { icon: '🏡', label: 'Аренда дома' },
+        { icon: '💨', label: 'Кальян и табак' },
+        { icon: '🥃', label: 'Напитки' },
+        { icon: '🧖', label: 'Баня и веники' },
+        { icon: '🍽️', label: 'Ресторан' },
+        { icon: '🚗', label: 'Такси и бензин' }
+      ];
+
+      const KNOWN_BANKS = ['Т-Банк', 'Сбер', 'Альфа', 'ВТБ', 'Райффайзен', 'Озон Банк', 'Яндекс Пэй'];
+
+      const AVATAR_COLORS = [
+        '#2481cc', '#10b981', '#ef4444', '#ec4899',
+        '#8b5cf6', '#f59e0b', '#06b6d4', '#6366f1', '#14b8a6'
+      ];
+
+      const RU_MONTHS_SHORT = [
+        'янв', 'фев', 'мар', 'апр', 'мая', 'июн',
+        'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'
+      ];
+
+      // Initialize Telegram Mini App SDK
+      if (tg) {
+        try {
+          tg.ready();
+          tg.expand();
+        } catch (err) {
+          console.warn('Telegram WebApp init warning:', err);
+        }
+      }
+
+      /* ------------------------------------------------------------------------
+         2. USER IDENTITY & LOCAL STORAGE HELPERS
+         ------------------------------------------------------------------------ */
+      function resolveCurrentUser() {
+        const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+        if (tgUser && tgUser.id) {
+          const fullName = [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ').trim();
+          return {
+            id: Number(tgUser.id),
+            name: fullName || tgUser.username || 'Участник',
+            isTelegram: true
+          };
+        }
+
+        // Browser fallback: persistent numeric guest ID + editable name
+        try {
+          const raw = localStorage.getItem(GUEST_USER_STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed && parsed.id) {
+              return {
+                id: Number(parsed.id),
+                name: String(parsed.name || 'Алексей'),
+                isTelegram: false
+              };
+            }
+          }
+        } catch (e) {}
+
+        const generated = {
+          id: 900000000 + Math.floor(Math.random() * 99999999),
+          name: 'Алексей'
+        };
+        try {
+          localStorage.setItem(GUEST_USER_STORAGE_KEY, JSON.stringify(generated));
+        } catch (e) {}
+
+        return { id: generated.id, name: generated.name, isTelegram: false };
+      }
+
+      function getSavedEventIds() {
+        try {
+          const raw = localStorage.getItem(SAVED_EVENTS_STORAGE_KEY);
+          const arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr) ? arr.filter(Boolean) : [];
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function addSavedEventId(eventId) {
+        if (!eventId) return;
+        const set = new Set(getSavedEventIds());
+        set.add(String(eventId));
+        try {
+          localStorage.setItem(SAVED_EVENTS_STORAGE_KEY, JSON.stringify(Array.from(set)));
+        } catch (e) {}
+      }
+
+      function removeSavedEventId(eventId) {
+        const next = getSavedEventIds().filter(id => id !== String(eventId));
+        try {
+          localStorage.setItem(SAVED_EVENTS_STORAGE_KEY, JSON.stringify(next));
+        } catch (e) {}
+      }
+
+      function resolveInitialTheme() {
+        if (tg && tg.colorScheme) {
+          return tg.colorScheme === 'dark' ? 'dark' : 'light';
+        }
+        try {
+          const saved = localStorage.getItem(THEME_STORAGE_KEY);
+          if (saved === 'dark' || saved === 'light') return saved;
+        } catch (e) {}
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+
+      function extractDeepLinkEventId() {
+        // 1. Telegram start_param
+        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) {
+          return String(tg.initDataUnsafe.start_param).trim();
+        }
+        // 2. URL query parameters (?startapp=... or ?event=...)
+        const params = new URLSearchParams(window.location.search);
+        const fromQuery = params.get('startapp') || params.get('event');
+        if (fromQuery) return fromQuery.trim();
+
+        // 3. Telegram WebApp hash parameter (#tgWebAppStartParam=...)
+        if (window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+          const fromHash = hashParams.get('tgWebAppStartParam') || hashParams.get('startapp');
+          if (fromHash) return fromHash.trim();
+        }
+        return null;
+      }
+
+      /* ------------------------------------------------------------------------
+         3. APPLICATION STATE
+         ------------------------------------------------------------------------ */
+      const state = {
+        theme: resolveInitialTheme(),
+        user: resolveCurrentUser(),
+        realtimeConnected: false,
+        loading: true,
+        view: 'events',         // 'events' | 'event'
+        eventFilter: 'all',     // 'all' | 'active' | 'closed'
+        activeEventId: null,
+        activeTab: 'expenses',  // 'expenses' | 'summary' | 'participants'
+        events: [],             // Enriched event objects from Supabase
+        activeEvent: null,      // Detailed active event object
+        viewerParticipantId: null,
+        balancesExpanded: false
+      };
+
+      // Transient modal state
+      let newEventEmoji = '🌲';
+      let newEventFriends = [];
+      let editEventEmoji = '🌲';
+      let currentSplitModeInModal = 'equal'; // 'equal' | 'manual'
+      let realtimeDebounceTimer = null;
+      let invitePromptDismissedForEvent = null;
+
+      /* ------------------------------------------------------------------------
+         4. INTEGER-KOPEK FINANCIAL ENGINE & GREEDY SETTLEMENT
+         ------------------------------------------------------------------------ */
+      function rublesToKopeks(value) {
+        const str = String(value ?? '').trim().replace(',', '.');
+        if (str === '') return 0;
+        const num = parseFloat(str);
+        if (!Number.isFinite(num) || num < 0) return NaN;
+        return Math.round(num * 100);
+      }
+
+      function kopeksToInputString(kopeks) {
+        if (!kopeks || kopeks <= 0) return '';
+        if (kopeks % 100 === 0) return String(kopeks / 100);
+        return (kopeks / 100).toFixed(2).replace(/0$/, '');
+      }
+
+      /**
+       * Enriches an event with deterministic avatar colors and calculates
+       * exact integer-kopek balances, greedy transfers, and paid transfer matches.
+       */
+      function computeEventFinances(ev) {
+        const participants = (ev.participants || []).map((p, idx) => ({
+          ...p,
+          color: AVATAR_COLORS[idx % AVATAR_COLORS.length]
+        }));
+        const expenses = ev.expenses || [];
+        const paidTransfersRows = ev.paid_transfers || [];
+
+        const totalBudgetKopecks = expenses.reduce(
+          (sum, exp) => sum + Math.round(Number(exp.amount || 0) * 100),
+          0
+        );
+
+        const ledger = {};
+        participants.forEach(p => {
+          ledger[p.id] = {
+            participant: p,
+            paidKopecks: 0,
+            shareKopecks: 0,
+            netKopecks: 0
+          };
+        });
+
+        expenses.forEach(exp => {
+          const amountKop = Math.round(Number(exp.amount || 0) * 100);
+          if (amountKop <= 0) return;
+
+          if (ledger[exp.paid_by]) {
+            ledger[exp.paid_by].paidKopecks += amountKop;
+          }
+
+          const splitsObj = exp.splits && typeof exp.splits === 'object' ? exp.splits : {};
+          const entries = Object.entries(splitsObj).filter(([uid]) => Boolean(ledger[uid]));
+
+          if (entries.length > 0) {
+            entries.forEach(([uid, rubVal]) => {
+              const shareKop = Math.round(Number(rubVal || 0) * 100);
+              if (shareKop > 0) {
+                ledger[uid].shareKopecks += shareKop;
+              }
+            });
+          } else if (participants.length > 0) {
+            // Fallback equal split if splits JSONB was empty
+            const base = Math.floor(amountKop / participants.length);
+            let rem = amountKop - base * participants.length;
+            participants.forEach(p => {
+              const extra = rem > 0 ? 1 : 0;
+              if (rem > 0) rem--;
+              ledger[p.id].shareKopecks += base + extra;
+            });
+          }
+        });
+
+        const balances = participants.map(p => {
+          const entry = ledger[p.id];
+          entry.netKopecks = entry.paidKopecks - entry.shareKopecks;
+          return entry;
+        });
+
+        const debtors = balances
+          .filter(b => b.netKopecks < 0)
+          .map(b => ({ id: b.participant.id, amount: Math.abs(b.netKopecks) }));
+
+        const creditors = balances
+          .filter(b => b.netKopecks > 0)
+          .map(b => ({ id: b.participant.id, amount: b.netKopecks }));
+
+        const transfers = [];
+
+        // Pass 1: Exact 1-to-1 debt/credit matches
+        for (let i = 0; i < debtors.length; i++) {
+          if (debtors[i].amount === 0) continue;
+          const exactIdx = creditors.findIndex(c => c.amount === debtors[i].amount);
+          if (exactIdx !== -1) {
+            const amt = debtors[i].amount;
+            transfers.push({
+              fromId: debtors[i].id,
+              toId: creditors[exactIdx].id,
+              amountKopecks: amt
+            });
+            debtors[i].amount = 0;
+            creditors[exactIdx].amount = 0;
+          }
+        }
+
+        // Pass 2: Greedy pairing (largest debtor -> largest creditor)
+        while (true) {
+          debtors.sort((a, b) => b.amount - a.amount);
+          creditors.sort((a, b) => b.amount - a.amount);
+
+          const topDebtor = debtors[0];
+          const topCreditor = creditors[0];
+
+          if (!topDebtor || !topCreditor || topDebtor.amount <= 0 || topCreditor.amount <= 0) {
+            break;
+          }
+
+          const settled = Math.min(topDebtor.amount, topCreditor.amount);
+          transfers.push({
+            fromId: topDebtor.id,
+            toId: topCreditor.id,
+            amountKopecks: settled
+          });
+
+          topDebtor.amount -= settled;
+          topCreditor.amount -= settled;
+        }
+
+        // Match calculated transfers against paid_transfers table rows
+        const usedPaidRowIds = new Set();
+        const enrichedTransfers = transfers.map((t, idx) => {
+          const match = paidTransfersRows.find(row =>
+            !usedPaidRowIds.has(row.id) &&
+            row.from_participant_id === t.fromId &&
+            row.to_participant_id === t.toId &&
+            Math.round(Number(row.amount || 0) * 100) === t.amountKopecks
+          );
+          if (match) usedPaidRowIds.add(match.id);
+
+          return {
+            ...t,
+            idx,
+            paidRow: match || null,
+            isPaid: Boolean(match)
+          };
+        });
+
+        const paidList = enrichedTransfers.filter(t => t.isPaid);
+        const paidCount = paidList.length;
+        const totalTransferKopecks = enrichedTransfers.reduce((s, t) => s + t.amountKopecks, 0);
+        const paidKopecks = paidList.reduce((s, t) => s + t.amountKopecks, 0);
+
+        const isClosed = totalBudgetKopecks > 0 && (
+          enrichedTransfers.length === 0 || paidCount === enrichedTransfers.length
+        );
+
+        return {
+          participants,
+          totalBudgetKopecks,
+          ledger,
+          balances,
+          transfers: enrichedTransfers,
+          totalTransferKopecks,
+          paidCount,
+          paidKopecks,
+          isClosed
+        };
+      }
+
+      /* ------------------------------------------------------------------------
+         5. SUPABASE DATA LAYER & REALTIME SUBSCRIPTIONS
+         ------------------------------------------------------------------------ */
+      async function loadEventsList(silent = false) {
+        if (!silent) {
+          state.loading = true;
+          renderAll();
+        }
+
+        try {
+          const userId = state.user.id;
+          const savedIds = getSavedEventIds();
+
+          // Find events where user is creator OR participant
+          const [createdRes, partRes] = await Promise.all([
+            supabaseClient.from('events').select('id').eq('creator_tg_id', userId),
+            supabaseClient.from('participants').select('event_id').eq('tg_user_id', userId)
+          ]);
+
+          const idSet = new Set(savedIds);
+          (createdRes.data || []).forEach(r => idSet.add(r.id));
+          (partRes.data || []).forEach(r => idSet.add(r.event_id));
+
+          const eventIds = Array.from(idSet);
+          if (eventIds.length === 0) {
+            state.events = [];
+            state.loading = false;
+            renderAll();
+            return;
+          }
+
+          const [eventsRes, allPartsRes, allExpRes, allPaidRes] = await Promise.all([
+            supabaseClient.from('events').select('*').in('id', eventIds).order('created_at', { ascending: false }),
+            supabaseClient.from('participants').select('*').in('event_id', eventIds).order('created_at', { ascending: true }),
+            supabaseClient.from('expenses').select('*').in('event_id', eventIds).order('created_at', { ascending: true }),
+            supabaseClient.from('paid_transfers').select('*').in('event_id', eventIds).order('created_at', { ascending: true })
+          ]);
+
+          if (eventsRes.error) throw eventsRes.error;
+
+          const rawEvents = eventsRes.data || [];
+          const partsByEvent = groupByEventId(allPartsRes.data || []);
+          const expsByEvent = groupByEventId(allExpRes.data || []);
+          const paidByEvent = groupByEventId(allPaidRes.data || []);
+
+          state.events = rawEvents.map(ev => ({
+            ...ev,
+            participants: partsByEvent[ev.id] || [],
+            expenses: expsByEvent[ev.id] || [],
+            paid_transfers: paidByEvent[ev.id] || []
+          }));
+        } catch (err) {
+          console.error('Error loading events list:', err);
+          if (!silent) showToast('Ошибка загрузки событий из Supabase');
+        } finally {
+          state.loading = false;
+          renderAll();
+        }
+      }
+
+      async function loadEventDetails(eventId, silent = false, checkInviteJoin = false) {
+        if (!silent) {
+          state.loading = true;
+          renderAll();
+        }
+
+        try {
+          const [evRes, partsRes, expRes, paidRes] = await Promise.all([
+            supabaseClient.from('events').select('*').eq('id', eventId).maybeSingle(),
+            supabaseClient.from('participants').select('*').eq('event_id', eventId).order('created_at', { ascending: true }),
+            supabaseClient.from('expenses').select('*').eq('event_id', eventId).order('created_at', { ascending: true }),
+            supabaseClient.from('paid_transfers').select('*').eq('event_id', eventId).order('created_at', { ascending: true })
+          ]);
+
+          if (evRes.error) throw evRes.error;
+
+          if (!evRes.data) {
+            removeSavedEventId(eventId);
+            state.view = 'events';
+            state.activeEventId = null;
+            state.activeEvent = null;
+            showToast('Событие не найдено или было удалено');
+            await loadEventsList(false);
+            return;
+          }
+
+          addSavedEventId(eventId);
+
+          const fullEvent = {
+            ...evRes.data,
+            participants: partsRes.data || [],
+            expenses: expRes.data || [],
+            paid_transfers: paidRes.data || []
+          };
+
+          state.activeEvent = fullEvent;
+          state.activeEventId = fullEvent.id;
+          state.view = 'event';
+
+          // Automatically pick current user's participant record for "Смотрю как"
+          const linkedMe = fullEvent.participants.find(
+            p => p.tg_user_id !== null && Number(p.tg_user_id) === Number(state.user.id)
+          );
+
+          if (linkedMe) {
+            state.viewerParticipantId = linkedMe.id;
+          } else if (
+            !state.viewerParticipantId ||
+            !fullEvent.participants.some(p => p.id === state.viewerParticipantId)
+          ) {
+            state.viewerParticipantId = fullEvent.participants[0] ? fullEvent.participants[0].id : null;
+          }
+
+          state.loading = false;
+          renderAll(!silent);
+
+          // Deep-link invite check: if current user is not yet linked to any participant
+          if (checkInviteJoin && !linkedMe && invitePromptDismissedForEvent !== fullEvent.id) {
+            openJoinEventModal(fullEvent);
+          }
+        } catch (err) {
+          console.error('Error loading event details:', err);
+          state.loading = false;
+          renderAll();
+          if (!silent) showToast('Не удалось загрузить событие');
+        }
+      }
+
+      function groupByEventId(rows) {
+        const map = {};
+        rows.forEach(r => {
+          if (!map[r.event_id]) map[r.event_id] = [];
+          map[r.event_id].push(r);
+        });
+        return map;
+      }
+
+      function setupSupabaseRealtime() {
+        const handleDbChange = () => {
+          clearTimeout(realtimeDebounceTimer);
+          realtimeDebounceTimer = setTimeout(() => {
+            if (state.view === 'event' && state.activeEventId) {
+              loadEventDetails(state.activeEventId, true, false);
+            } else if (state.view === 'events') {
+              loadEventsList(true);
+            }
+          }, 260);
+        };
+
+        supabaseClient
+          .channel('porovnu-live-sync')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'events' }, handleDbChange)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'participants' }, handleDbChange)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, handleDbChange)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'paid_transfers' }, handleDbChange)
+          .subscribe(status => {
+            state.realtimeConnected = status === 'SUBSCRIBED';
+            const dot = document.getElementById('realtimeDot');
+            if (dot) {
+              dot.classList.toggle('offline', !state.realtimeConnected);
+              dot.title = state.realtimeConnected ? 'Realtime подключен' : 'Подключение...';
+            }
+          });
+      }
+
+      /* ------------------------------------------------------------------------
+         6. UTILITY HELPERS (FORMATTING, ICONS, CLIPBOARD, DEEP LINKS)
+         ------------------------------------------------------------------------ */
+      function escapeHtml(str) {
+        return String(str ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatKopecks(kopecks, showSign = false) {
+        const isNeg = kopecks < 0;
+        const abs = Math.abs(Math.round(kopecks));
+        const rubles = Math.floor(abs / 100);
+        const kop = abs % 100;
+        const rubStr = rubles.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+        const full = kop === 0 ? `${rubStr} ₽` : `${rubStr},${kop.toString().padStart(2, '0')} ₽`;
+        if (showSign) {
+          if (kopecks > 0) return `+${full}`;
+          if (kopecks < 0) return `-${full}`;
+        } else if (isNeg) {
+          return `-${full}`;
+        }
+        return full;
+      }
+
+      function formatRuDate(dateStr) {
+        if (!dateStr) return 'Без даты';
+        const parts = String(dateStr).split('-');
+        if (parts.length !== 3) return dateStr;
+        const year = parts[0];
+        const monthIdx = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        if (isNaN(day) || monthIdx < 0 || monthIdx > 11) return dateStr;
+        return `${day} ${RU_MONTHS_SHORT[monthIdx]} ${year}`;
+      }
+
+      function formatShortTime(isoStr) {
+        if (!isoStr) return '';
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return '';
+        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+      }
+
+      function getTodayISO() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
+
+      function getInitials(name) {
+        const parts = String(name || '?').trim().split(/\s+/);
+        if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+        return parts[0].slice(0, 2).toUpperCase();
+      }
+
+      function inferExpenseIcon(title) {
+        const t = String(title || '').toLowerCase();
+        if (t.includes('дом') || t.includes('аренд') || t.includes('отель') || t.includes('жиль') || t.includes('квартир')) return '🏡';
+        if (t.includes('мясо') || t.includes('шашлык') || t.includes('продукт') || t.includes('угл') || t.includes('еда')) return '🥩';
+        if (t.includes('кальян') || t.includes('табак')) return '💨';
+        if (t.includes('напит') || t.includes('виски') || t.includes('пив') || t.includes('вин') || t.includes('алко') || t.includes('лимонад') || t.includes('сок')) return '🥃';
+        if (t.includes('бан') || t.includes('саун') || t.includes('веник')) return '🧖';
+        if (t.includes('ресторан') || t.includes('кафе') || t.includes('пицц') || t.includes('хинкал') || t.includes('ужин')) return '🍽️';
+        if (t.includes('такси') || t.includes('бенз') || t.includes('дорог') || t.includes('машин')) return '🚗';
+        return '🧾';
+      }
+
+      function getBankBadgeClass(bankName) {
+        const b = String(bankName || '').toLowerCase();
+        if (b.includes('т-банк') || b.includes('тинькофф')) return 'bank-tbank';
+        if (b.includes('сбер')) return 'bank-sber';
+        if (b.includes('альфа')) return 'bank-alfa';
+        if (b.includes('втб')) return 'bank-vtb';
+        if (b.includes('озон') || b.includes('ozon')) return 'bank-ozon';
+        if (b.includes('райфф')) return 'bank-raif';
+        if (b.includes('яндекс')) return 'bank-yandex';
+        return 'bank-other';
+      }
+
+      function getEventDeepLink(eventId) {
+        return `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${eventId}`;
+      }
+
+      function shareEventToTelegram(ev) {
+        const deepLink = getEventDeepLink(ev.id);
+        const text = `${ev.emoji || '🧾'} Присоединяйся к событию «${ev.title}» (${formatRuDate(ev.date)}) в ПОРОВНУ — добавляй траты и смотри кому сколько перевести!`;
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(text)}`;
+
+        if (tg && typeof tg.openTelegramLink === 'function') {
+          tg.openTelegramLink(shareUrl);
+        } else {
+          copyToClipboard(deepLink, 'Ссылка скопирована! Открываем Telegram...');
+          window.open(shareUrl, '_blank', 'noopener');
+        }
+      }
+
+      function copyToClipboard(text, successMsg) {
+        let copied = false;
+        try {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.setAttribute('readonly', '');
+          textarea.style.position = 'fixed';
+          textarea.style.top = '-9999px';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          textarea.setSelectionRange(0, textarea.value.length);
+          copied = document.execCommand('copy');
+          document.body.removeChild(textarea);
+        } catch (err) {
+          copied = false;
+        }
+
+        if (!copied && navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(() => showToast(successMsg))
+            .catch(() => showToast('Не удалось скопировать'));
+          return;
+        }
+        showToast(copied ? successMsg : 'Не удалось скопировать');
+      }
+
+      function showToast(message) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(-8px)';
+          toast.style.transition = 'opacity 0.2s, transform 0.2s';
+          setTimeout(() => toast.remove(), 220);
+        }, 2400);
+      }
+
+      /* ------------------------------------------------------------------------
+         7. MASTER RENDER CONTROLLER
+         ------------------------------------------------------------------------ */
+      function renderAll(animate = false) {
+        document.documentElement.setAttribute('data-theme', state.theme);
+
+        const main = document.getElementById('mainContent');
+        const bottomNav = document.getElementById('bottomNav');
+        const fabWrap = document.getElementById('fabWrap');
+
+        if (state.view === 'events' || !state.activeEvent) {
+          bottomNav.style.display = 'none';
+          main.classList.add('with-fab-pad');
+          renderEventsHeader();
+
+          if (state.loading) {
+            main.innerHTML = `
+              <div class="spinner-box">
+                <div class="spinner"></div>
+                <span>Загружаем события из облака...</span>
+              </div>
+            `;
+          } else {
+            main.innerHTML = `<div class="${animate ? 'view-animate' : ''}">${renderEventsListScreen()}</div>`;
+          }
+
+          fabWrap.style.display = 'block';
+          fabWrap.innerHTML = `
+            <button class="btn btn-primary fab-btn" data-global-action="open-create-event">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Новое событие
+            </button>
+          `;
+        } else {
+          const ev = state.activeEvent;
+          const finances = computeEventFinances(ev);
+
+          if (!finances.participants.some(p => p.id === state.viewerParticipantId)) {
+            state.viewerParticipantId = finances.participants[0] ? finances.participants[0].id : null;
+          }
+
+          bottomNav.style.display = 'grid';
+          fabWrap.style.display = 'none';
+          main.classList.remove('with-fab-pad');
+          renderEventHeader(ev, finances);
+          renderEventBottomNav(finances);
+
+          if (state.loading) {
+            main.innerHTML = `
+              <div class="spinner-box">
+                <div class="spinner"></div>
+                <span>Синхронизация данных...</span>
+              </div>
+            `;
+          } else if (state.activeTab === 'expenses') {
+            main.innerHTML = `<div class="${animate ? 'view-animate' : ''}">${renderExpensesTab(ev, finances)}</div>`;
+          } else if (state.activeTab === 'summary') {
+            main.innerHTML = `<div class="${animate ? 'view-animate' : ''}">${renderSummaryTab(ev, finances)}</div>`;
+          } else {
+            main.innerHTML = `<div class="${animate ? 'view-animate' : ''}">${renderParticipantsTab(ev, finances)}</div>`;
+          }
+        }
+      }
+
+      /* ------------------------------------------------------------------------
+         7A. HOME SCREEN: "МОИ СОБЫТИЯ"
+         ------------------------------------------------------------------------ */
+      function renderEventsHeader() {
+        const header = document.getElementById('appHeader');
+        header.innerHTML = `
+          <div class="header-top-row">
+            <div class="brand-lockup">
+              <div class="brand-logo" aria-hidden="true">÷</div>
+              <div>
+                <div class="brand-name-row">
+                  <span class="brand-name">ПОРОВНУ</span>
+                  <span id="realtimeDot" class="live-dot ${state.realtimeConnected ? '' : 'offline'}" title="${state.realtimeConnected ? 'Realtime подключен' : 'Подключение...'}"></span>
+                </div>
+                <div class="brand-sub">Мои события</div>
+              </div>
+            </div>
+            <div class="header-actions">
+              <button class="user-profile-pill" data-global-action="open-guest-profile" title="Настроить имя">
+                <span>${state.user.isTelegram ? '✈️' : '👤'}</span>
+                <span class="u-name">${escapeHtml(state.user.name)}</span>
+              </button>
+              <button class="icon-btn" data-global-action="toggle-theme" title="Переключить тему" aria-label="Переключить тему">
+                <span style="font-size: 15px; line-height: 1;">${state.theme === 'dark' ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderEventsListScreen() {
+        const enriched = state.events.map(ev => ({ ev, fin: computeEventFinances(ev) }));
+
+        const totalAll = enriched.length;
+        const totalActive = enriched.filter(x => !x.fin.isClosed).length;
+        const totalClosed = enriched.filter(x => x.fin.isClosed).length;
+
+        const filtered = enriched.filter(item => {
+          if (state.eventFilter === 'active') return !item.fin.isClosed;
+          if (state.eventFilter === 'closed') return item.fin.isClosed;
+          return true;
+        });
+
+        filtered.sort((a, b) => String(b.ev.event_date || '').localeCompare(String(a.ev.event_date || '')));
+
+        const filtersHtml = `
+          <div class="filter-pills" role="tablist">
+            <button class="filter-pill ${state.eventFilter === 'all' ? 'active' : ''}" data-action="set-filter" data-filter="all">
+              Все (${totalAll})
+            </button>
+            <button class="filter-pill ${state.eventFilter === 'active' ? 'active' : ''}" data-action="set-filter" data-filter="active">
+              Активные (${totalActive})
+            </button>
+            <button class="filter-pill ${state.eventFilter === 'closed' ? 'active' : ''}" data-action="set-filter" data-filter="closed">
+              Закрытые (${totalClosed})
+            </button>
+          </div>
+        `;
+
+        let cardsHtml = '';
+        if (filtered.length === 0) {
+          const isCompletelyEmpty = totalAll === 0;
+          const msg = isCompletelyEmpty
+            ? 'Создай своё первое событие или запусти готовый демо-сценарий «Поездка на природу» в один клик.'
+            : (state.eventFilter === 'closed'
+              ? 'Пока нет полностью закрытых событий.'
+              : 'Все события уже закрыты! Создай новое для следующей встречи.');
+
+          cardsHtml = `
+            <div class="card empty-state">
+              <div class="empty-icon">📅</div>
+              <div class="empty-title">${isCompletelyEmpty ? 'У вас пока нет событий' : 'В этом фильтре пусто'}</div>
+              <div class="empty-desc">${msg}</div>
+              ${isCompletelyEmpty ? `
+                <button class="btn btn-soft-blue btn-block" data-action="create-demo-event" style="margin-top: 14px;">
+                  🌲 Создать демо-событие
+                </button>
+              ` : ''}
+            </div>
+          `;
+        } else {
+          cardsHtml = filtered.map(({ ev, fin }) => {
+            const totalTr = fin.transfers.length;
+            const pct = totalTr > 0
+              ? Math.round((fin.paidCount / totalTr) * 100)
+              : (fin.totalBudgetKopecks > 0 ? 100 : 0);
+
+            // Personal balance status badge for current user
+            const myParticipant = fin.participants.find(
+              p => p.tg_user_id !== null && Number(p.tg_user_id) === Number(state.user.id)
+            );
+
+            let personalBadgeHtml = '';
+            if (fin.totalBudgetKopecks === 0) {
+              personalBadgeHtml = `<span class="status-pill status-pill-neutral">Нет трат</span>`;
+            } else if (fin.isClosed) {
+              personalBadgeHtml = `<span class="status-pill status-pill-closed">В расчёте ✅</span>`;
+            } else if (myParticipant && fin.ledger[myParticipant.id]) {
+              const netKop = fin.ledger[myParticipant.id].netKopecks;
+              if (netKop > 0) {
+                personalBadgeHtml = `<span class="status-pill status-pill-credit num">Вам должны ${formatKopecks(netKop)}</span>`;
+              } else if (netKop < 0) {
+                personalBadgeHtml = `<span class="status-pill status-pill-debt num">Вы должны ${formatKopecks(Math.abs(netKop))}</span>`;
+              } else {
+                personalBadgeHtml = `<span class="status-pill status-pill-closed">В расчёте ✅</span>`;
+              }
+            } else {
+              personalBadgeHtml = `<span class="status-pill status-pill-neutral">Участников: ${fin.participants.length}</span>`;
+            }
+
+            const progressText = totalTr > 0
+              ? `Закрыто ${fin.paidCount} из ${totalTr} переводов`
+              : (fin.totalBudgetKopecks > 0 ? 'Переводы не требуются' : 'Добавьте первую трату');
+
+            return `
+              <div class="card event-card ${fin.isClosed ? 'is-closed' : ''}" data-action="open-event" data-event-id="${escapeHtml(ev.id)}">
+                <div class="event-card-top">
+                  <div class="event-emoji-box">${escapeHtml(ev.emoji || '🧾')}</div>
+                  <div class="event-card-info">
+                    <div class="event-card-title">${escapeHtml(ev.title)}</div>
+                    <div class="event-card-meta">
+                      <span>📅 ${escapeHtml(formatRuDate(ev.event_date))}</span>
+                      <span>·</span>
+                      <span>👥 ${fin.participants.length} чел.</span>
+                    </div>
+                  </div>
+                  <div class="event-card-total-col">
+                    <div class="event-card-total num">${formatKopecks(fin.totalBudgetKopecks)}</div>
+                    <div class="event-card-open">Открыть →</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="progress-track">
+                    <div class="progress-fill" style="width: ${pct}%;"></div>
+                  </div>
+                  <div class="event-card-bottom">
+                    <span class="event-progress-label">${progressText}</span>
+                    ${personalBadgeHtml}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        const footerHtml = totalAll > 0 ? `
+          <div class="events-footer">
+            <button class="btn btn-secondary btn-sm" data-action="create-demo-event">
+              🌲 Создать демо-событие
+            </button>
+          </div>
+        ` : '';
+
+        return filtersHtml + cardsHtml + footerHtml;
+      }
+
+      /* ------------------------------------------------------------------------
+         7B. EVENT DETAIL HEADER & PERSPECTIVE SWITCHER
+         ------------------------------------------------------------------------ */
+      function renderEventHeader(ev, finances) {
+        const header = document.getElementById('appHeader');
+
+        const viewerPillsHtml = finances.participants.map(p => {
+          const isActive = p.id === state.viewerParticipantId;
+          const isMe = p.tg_user_id !== null && Number(p.tg_user_id) === Number(state.user.id);
+          return `
+            <button type="button" class="viewer-pill ${isActive ? 'active' : ''}" data-global-action="select-viewer" data-uid="${escapeHtml(p.id)}">
+              <span class="avatar avatar-xs" style="background: ${p.color};">${escapeHtml(getInitials(p.name))}</span>
+              <span>${escapeHtml(p.name)}${isMe ? ' (вы)' : ''}</span>
+            </button>
+          `;
+        }).join('');
+
+        header.innerHTML = `
+          <div class="event-nav-row">
+            <button class="back-btn" data-global-action="go-events">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+              События
+            </button>
+            <div class="header-actions">
+              <button class="header-share-btn" data-global-action="quick-share-event">
+                ✈️ Поделиться
+              </button>
+              <button class="icon-btn" data-global-action="open-edit-event" title="Настройки события" aria-label="Настройки события">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+              </button>
+              <button class="icon-btn" data-global-action="toggle-theme" title="Переключить тему" aria-label="Переключить тему">
+                <span style="font-size: 14px; line-height: 1;">${state.theme === 'dark' ? '☀️' : '🌙'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="event-identity-row">
+            <button class="event-title-trigger" data-global-action="open-edit-event">
+              <span class="event-header-emoji">${escapeHtml(ev.emoji || '🧾')}</span>
+              <div class="event-header-meta">
+                <div class="event-header-title">${escapeHtml(ev.title)}</div>
+                <div class="event-header-date">${escapeHtml(formatRuDate(ev.event_date))} · ${finances.participants.length} уч.</div>
+              </div>
+            </button>
+            <span id="realtimeDot" class="live-dot ${state.realtimeConnected ? '' : 'offline'}" title="${state.realtimeConnected ? 'Realtime подключен' : 'Подключение...'}"></span>
+          </div>
+
+          ${finances.participants.length > 0 ? `
+            <div class="viewer-strip-wrap">
+              <div class="viewer-strip-label">
+                <span>👁️ Смотрю как:</span>
+              </div>
+              <div class="viewer-pills">${viewerPillsHtml}</div>
+            </div>
+          ` : ''}
+        `;
+      }
+
+      function renderEventBottomNav(finances) {
+        document.querySelectorAll('#bottomNav .nav-item').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.tab === state.activeTab);
+        });
+        const unpaidCount = finances.transfers.length - finances.paidCount;
+        const badge = document.getElementById('unpaidBadge');
+        if (unpaidCount > 0) {
+          badge.style.display = 'flex';
+          badge.textContent = unpaidCount;
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      /* ------------------------------------------------------------------------
+         7C. EVENT TAB 1: "ТРАТЫ"
+         ------------------------------------------------------------------------ */
+      function renderExpensesTab(ev, finances) {
+        const viewer = finances.participants.find(p => p.id === state.viewerParticipantId);
+        const viewerEntry = viewer ? finances.ledger[viewer.id] : null;
+        const shareKop = viewerEntry ? viewerEntry.shareKopecks : 0;
+        const netKop = viewerEntry ? viewerEntry.netKopecks : 0;
+        const balClass = netKop > 0 ? 'val-pos' : (netKop < 0 ? 'val-neg' : 'val-zero');
+
+        const isUserLinked = finances.participants.some(
+          p => p.tg_user_id !== null && Number(p.tg_user_id) === Number(state.user.id)
+        );
+
+        const unlinkedBanner = !isUserLinked ? `
+          <div class="unlinked-banner">
+            <span>Вы ещё не привязаны к участнику события</span>
+            <button class="btn btn-primary btn-sm" data-action="open-join-modal">Войти</button>
+          </div>
+        ` : '';
+
+        const heroHtml = `
+          ${unlinkedBanner}
+          <div class="card card-hero">
+            <div class="hero-stats-grid">
+              <div class="hero-stat-box">
+                <span class="hero-stat-label">Всего потрачено</span>
+                <span class="hero-stat-val num">${formatKopecks(finances.totalBudgetKopecks)}</span>
+              </div>
+              <div class="hero-stat-box">
+                <span class="hero-stat-label">Ваша доля</span>
+                <span class="hero-stat-val num">${formatKopecks(shareKop)}</span>
+              </div>
+              <div class="hero-stat-box highlight">
+                <span class="hero-stat-label">Ваш баланс</span>
+                <span class="hero-stat-val num ${balClass}">${formatKopecks(netKop, true)}</span>
+              </div>
+            </div>
+            <div class="hero-bottom-strip">
+              <span>🧾 Чеков: ${ev.expenses.length} · ${finances.isClosed ? 'Всё закрыто ✅' : `Закрыто ${finances.paidCount}/${finances.transfers.length}`}</span>
+              <button style="color: #fff; font-weight: 800; font-size: 12px;" data-action="go-summary">К итогам →</button>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-block" data-action="open-add-expense" style="margin-bottom: 12px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Добавить трату
+          </button>
+        `;
+
+        if (ev.expenses.length === 0) {
+          return heroHtml + `
+            <div class="card empty-state">
+              <div class="empty-icon">🧾</div>
+              <div class="empty-title">В событии пока нет трат</div>
+              <div class="empty-desc">Нажми «Добавить трату» выше, чтобы разделить чек поровну или указать суммы вручную.</div>
+            </div>
+          `;
+        }
+
+        const expensesHtml = ev.expenses.slice().reverse().map(exp => {
+          const payer = finances.participants.find(p => p.id === exp.paid_by);
+          const amountKop = Math.round(Number(exp.amount || 0) * 100);
+          const isManual = exp.split_mode === 'manual';
+          const splitsObj = exp.splits && typeof exp.splits === 'object' ? exp.splits : {};
+
+          const activeShares = finances.participants
+            .map(p => ({ p, kop: Math.round(Number(splitsObj[p.id] || 0) * 100) }))
+            .filter(item => item.kop > 0);
+
+          const viewerShareKop = viewer ? Math.round(Number(splitsObj[viewer.id] || 0) * 100) : 0;
+
+          let badgeHtml = '';
+          let breakdownHtml = '';
+
+          if (isManual) {
+            badgeHtml = `<span class="split-badge split-badge-manual">✏️ Вручную · ${activeShares.length} чел.</span>`;
+            breakdownHtml = `
+              <div class="manual-chips-row">
+                ${activeShares.map(item => `
+                  <span class="manual-share-chip num">
+                    <span>${escapeHtml(item.p.name)}</span>
+                    <span class="chip-amt">${formatKopecks(item.kop)}</span>
+                  </span>
+                `).join('')}
+              </div>
+            `;
+          } else {
+            const isAll = activeShares.length === finances.participants.length && finances.participants.length > 0;
+            badgeHtml = isAll
+              ? `<span class="split-badge split-badge-all">⚖️ Поровну · ${activeShares.length} чел.</span>`
+              : `<span class="split-badge split-badge-selective">🎯 Поровну · ${activeShares.length} из ${finances.participants.length} чел.</span>`;
+
+            if (!isAll && activeShares.length > 0) {
+              breakdownHtml = `
+                <div class="split-names-list">
+                  Делят: ${activeShares.map(item => escapeHtml(item.p.name)).join(', ')}
+                </div>
+              `;
+            }
+          }
+
+          return `
+            <div class="card expense-card" data-action="edit-expense" data-id="${escapeHtml(exp.id)}">
+              <div class="expense-top">
+                <div class="cat-icon-box">${inferExpenseIcon(exp.title)}</div>
+                <div class="expense-info">
+                  <div class="expense-title">${escapeHtml(exp.title)}</div>
+                  <div class="expense-payer">
+                    ${payer ? `<span class="avatar avatar-xs" style="background: ${payer.color};">${escapeHtml(getInitials(payer.name))}</span>` : ''}
+                    <span>Оплатил(а): <strong>${payer ? escapeHtml(payer.name) : '—'}</strong></span>
+                  </div>
+                </div>
+                <div class="expense-amount-col">
+                  <div class="expense-amount num">${formatKopecks(amountKop)}</div>
+                  <div class="expense-viewer-share num ${viewerShareKop === 0 ? 'muted' : ''}">
+                    ${viewerShareKop > 0 ? `Доля: ${formatKopecks(viewerShareKop)}` : 'Не участвует'}
+                  </div>
+                </div>
+              </div>
+
+              <div class="expense-bottom">
+                ${badgeHtml}
+                <div class="card-mini-actions">
+                  <button class="mini-icon-action" data-action="edit-expense" data-id="${escapeHtml(exp.id)}" title="Редактировать" aria-label="Редактировать">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                  </button>
+                  <button class="mini-icon-action danger" data-action="delete-expense" data-id="${escapeHtml(exp.id)}" title="Удалить" aria-label="Удалить">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6"/><path d="M14 11v6"/>
+                    </svg>
+                  </button>
+                </div>
+                ${breakdownHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return heroHtml + `
+          <div class="section-header">
+            <span class="section-title">Чеки события</span>
+            <span class="section-count">${ev.expenses.length} шт.</span>
+          </div>
+          ${expensesHtml}
+        `;
+      }
+
+      /* ------------------------------------------------------------------------
+         7D. EVENT TAB 2: "ИТОГИ" (SMART SETTLEMENT & MINI-BILLS)
+         ------------------------------------------------------------------------ */
+      function renderSummaryTab(ev, finances) {
+        const totalTr = finances.transfers.length;
+        const pct = totalTr > 0
+          ? Math.round((finances.paidCount / totalTr) * 100)
+          : (finances.totalBudgetKopecks > 0 ? 100 : 0);
+        const viewer = finances.participants.find(p => p.id === state.viewerParticipantId);
+
+        const progressHtml = `
+          <div class="card progress-card">
+            <div class="progress-head">
+              <span class="progress-title">Закрыто ${finances.paidCount} из ${totalTr} переводов</span>
+              <span style="font-size: 13px; font-weight: 800; color: ${finances.isClosed ? 'var(--green-dark)' : 'var(--tg-blue)'};">
+                ${finances.isClosed ? '100% ✅' : `${pct}%`}
+              </span>
+            </div>
+            <div class="progress-track lg">
+              <div class="progress-fill" style="width: ${pct}%;"></div>
+            </div>
+            <div class="progress-sub">
+              <span>Оплачено по счетам:</span>
+              <span class="num"><strong>${formatKopecks(finances.paidKopecks)}</strong> из ${formatKopecks(finances.totalTransferKopecks)}</span>
+            </div>
+          </div>
+        `;
+
+        // Personal Mini-Bill for Active Viewer
+        let miniBillHtml = '';
+        if (viewer) {
+          const myOutgoing = finances.transfers.filter(t => t.fromId === viewer.id);
+          const myIncoming = finances.transfers.filter(t => t.toId === viewer.id);
+
+          let innerHtml = '';
+          if (myOutgoing.length === 0 && myIncoming.length === 0) {
+            innerHtml = `
+              <div style="padding: 6px 2px; font-size: 14px; font-weight: 700; color: var(--green-dark);">
+                В расчёте ✅
+              </div>
+              <div style="font-size: 12.5px; color: var(--text-secondary);">
+                ${escapeHtml(viewer.name)}, никому ничего переводить не нужно.
+              </div>
+            `;
+          } else {
+            if (myOutgoing.length > 0) {
+              innerHtml += `
+                <div style="font-size: 12px; font-weight: 800; color: var(--red); margin-bottom: 6px;">
+                  Кому перевести:
+                </div>
+                ${myOutgoing.map(t => renderMiniBillRow(finances, t, 'outgoing')).join('')}
+              `;
+            }
+            if (myIncoming.length > 0) {
+              innerHtml += `
+                <div style="font-size: 12px; font-weight: 800; color: var(--green-dark); margin-top: ${myOutgoing.length ? '10px' : '0'}; margin-bottom: 6px;">
+                  Кто переводит вам:
+                </div>
+                ${myIncoming.map(t => renderMiniBillRow(finances, t, 'incoming')).join('')}
+              `;
+            }
+          }
+
+          miniBillHtml = `
+            <div class="card mini-bill-card">
+              <div class="mini-bill-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span class="avatar avatar-md" style="background: ${viewer.color};">${escapeHtml(getInitials(viewer.name))}</span>
+                  <div>
+                    <div style="font-size: 15px; font-weight: 800;">Личный мини-счёт</div>
+                    <div style="font-size: 11.5px; color: var(--text-secondary);">Участник: ${escapeHtml(viewer.name)}</div>
+                  </div>
+                </div>
+                <span class="mini-bill-badge">Мини-счёт</span>
+              </div>
+              ${innerHtml}
+            </div>
+          `;
+        }
+
+        const transfersHtml = totalTr === 0
+          ? `
+            <div class="card empty-state">
+              <div class="empty-icon">🤝</div>
+              <div class="empty-title">Все участники в расчёте</div>
+              <div class="empty-desc">Долгов в этом событии нет.</div>
+            </div>
+          `
+          : finances.transfers.map(t => renderTransferCard(finances, t)).join('');
+
+        const balancesHtml = `
+          <div class="card">
+            <button class="collapse-trigger" data-action="toggle-balances">
+              <span>📊 Подробный баланс по людям</span>
+              <svg class="collapse-chevron ${state.balancesExpanded ? 'open' : ''}" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
+            ${state.balancesExpanded ? `
+              <div class="balance-table">
+                ${finances.balances.map(b => {
+                  const cls = b.netKopecks > 0 ? 'val-pos' : (b.netKopecks < 0 ? 'val-neg' : 'val-zero');
+                  return `
+                    <div class="balance-row">
+                      <div class="balance-person">
+                        <span class="avatar avatar-md" style="background: ${b.participant.color};">${escapeHtml(getInitials(b.participant.name))}</span>
+                        <div style="min-width: 0;">
+                          <div style="font-size: 13.5px; font-weight: 700;">${escapeHtml(b.participant.name)}</div>
+                          <div class="balance-person-meta num">
+                            Потратил: ${formatKopecks(b.paidKopecks)} · Доля: ${formatKopecks(b.shareKopecks)}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="balance-net num ${cls}">${formatKopecks(b.netKopecks, true)}</div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : ''}
+          </div>
+        `;
+
+        const copySummaryBtn = `
+          <button class="btn btn-primary btn-block" data-action="copy-chat-summary" style="margin-top: 4px;">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            Скопировать итоги для чата
+          </button>
+        `;
+
+        return progressHtml + miniBillHtml + `
+          <div class="section-header">
+            <span class="section-title">Все переводы</span>
+            <span class="section-count">Оптимизировано: ${totalTr}</span>
+          </div>
+          ${transfersHtml}
+          ${balancesHtml}
+          ${copySummaryBtn}
+        `;
+      }
+
+      function renderMiniBillRow(finances, t, mode) {
+        const from = finances.participants.find(p => p.id === t.fromId);
+        const to = finances.participants.find(p => p.id === t.toId);
+        if (!from || !to) return '';
+
+        const paidTime = t.paidRow ? formatShortTime(t.paidRow.created_at) : '';
+
+        if (mode === 'outgoing') {
+          const hasSbp = Boolean(to.phone);
+          return `
+            <div class="mini-bill-item ${t.isPaid ? 'is-paid' : ''}">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                  <span class="avatar avatar-sm" style="background: ${to.color};">${escapeHtml(getInitials(to.name))}</span>
+                  <span style="font-size: 13.5px; font-weight: 700;">Кому: ${escapeHtml(to.name)}</span>
+                </div>
+                <span class="num" style="font-size: 15px; font-weight: 800; color: ${t.isPaid ? 'var(--green-dark)' : 'var(--red)'};">
+                  ${formatKopecks(t.amountKopecks)}
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 8px; flex-wrap: wrap;">
+                ${hasSbp ? `
+                  <button class="btn btn-soft-blue btn-sm" data-action="copy-sbp" data-phone="${escapeHtml(to.phone)}" data-bank="${escapeHtml(to.bank || 'СБП')}">
+                    📋 ${escapeHtml(to.bank || 'СБП')} · ${escapeHtml(to.phone)}
+                  </button>
+                ` : `
+                  <button class="btn btn-secondary btn-sm" data-action="edit-participant" data-id="${escapeHtml(to.id)}">
+                    + Указать СБП
+                  </button>
+                `}
+                <button class="btn btn-sm ${t.isPaid ? 'btn-soft-green' : 'btn-success'}" data-action="toggle-paid" data-tr-idx="${t.idx}">
+                  ${t.isPaid ? 'Оплачено ✅' : 'Я перевёл'}
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="mini-bill-item ${t.isPaid ? 'is-paid' : ''}">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 7px;">
+                  <span class="avatar avatar-sm" style="background: ${from.color};">${escapeHtml(getInitials(from.name))}</span>
+                  <span style="font-size: 13.5px; font-weight: 700;">От: ${escapeHtml(from.name)}</span>
+                </div>
+                <span class="num" style="font-size: 15px; font-weight: 800; color: var(--green-dark);">
+                  +${formatKopecks(t.amountKopecks)}
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 7px;">
+                <span style="font-size: 12px; font-weight: 600; color: ${t.isPaid ? 'var(--green-dark)' : 'var(--text-secondary)'};">
+                  ${t.isPaid ? `Оплачено ✅ ${paidTime ? `(${paidTime})` : ''}` : '⏳ Ожидается перевод'}
+                </span>
+                <button class="btn btn-sm ${t.isPaid ? 'btn-secondary' : 'btn-soft-green'}" data-action="toggle-paid" data-tr-idx="${t.idx}">
+                  ${t.isPaid ? 'Отменить' : 'Подтвердить'}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      function renderTransferCard(finances, t) {
+        const from = finances.participants.find(p => p.id === t.fromId);
+        const to = finances.participants.find(p => p.id === t.toId);
+        if (!from || !to) return '';
+
+        const paidTime = t.paidRow ? formatShortTime(t.paidRow.created_at) : '';
+
+        const sbpHtml = to.phone
+          ? `
+            <div class="sbp-box">
+              <div class="sbp-details">
+                <div class="sbp-bank-row">
+                  <span class="bank-badge ${getBankBadgeClass(to.bank)}">${escapeHtml(to.bank || 'СБП')}</span>
+                  <span style="font-size: 11px; color: var(--text-secondary);">Получатель: ${escapeHtml(to.name)}</span>
+                </div>
+                <div class="sbp-phone">${escapeHtml(to.phone)}</div>
+              </div>
+              <button class="btn btn-soft-blue btn-sm" data-action="copy-sbp" data-phone="${escapeHtml(to.phone)}" data-bank="${escapeHtml(to.bank || 'СБП')}">
+                Скопировать
+              </button>
+            </div>
+          `
+          : `
+            <div class="sbp-box">
+              <span class="sbp-missing">У <strong>${escapeHtml(to.name)}</strong> не указан СБП</span>
+              <button class="btn btn-secondary btn-sm" data-action="edit-participant" data-id="${escapeHtml(to.id)}">
+                Указать СБП
+              </button>
+            </div>
+          `;
+
+        return `
+          <div class="card transfer-card ${t.isPaid ? 'is-paid' : ''}">
+            <div class="transfer-route">
+              <div class="transfer-people">
+                <span class="person-chip">
+                  <span class="avatar avatar-sm" style="background: ${from.color};">${escapeHtml(getInitials(from.name))}</span>
+                  ${escapeHtml(from.name)}
+                </span>
+                <span class="arrow-badge">→</span>
+                <span class="person-chip">
+                  <span class="avatar avatar-sm" style="background: ${to.color};">${escapeHtml(getInitials(to.name))}</span>
+                  ${escapeHtml(to.name)}
+                </span>
+              </div>
+              <div class="transfer-sum num">${formatKopecks(t.amountKopecks)}</div>
+            </div>
+
+            ${sbpHtml}
+
+            <div class="transfer-footer">
+              ${t.isPaid
+                ? `<span class="paid-stamp">Оплачено ✅ ${paidTime ? `· ${paidTime}` : ''}</span>`
+                : `<span style="font-size: 12px; color: var(--text-secondary);">Ожидает перевода</span>`
+              }
+              <button class="btn btn-sm ${t.isPaid ? 'btn-soft-green' : 'btn-success'}" data-action="toggle-paid" data-tr-idx="${t.idx}">
+                ${t.isPaid ? 'Оплачено ✅' : 'Я перевёл'}
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      /* ------------------------------------------------------------------------
+         7E. EVENT TAB 3: "УЧАСТНИКИ" & 1-CLICK TELEGRAM INVITE
+         ------------------------------------------------------------------------ */
+      function renderParticipantsTab(ev, finances) {
+        const deepLink = getEventDeepLink(ev.id);
+
+        const inviteCard = `
+          <div class="card invite-card">
+            <div style="display: flex; align-items: center; gap: 9px;">
+              <span style="font-size: 21px;">✈️</span>
+              <div>
+                <div style="font-size: 15px; font-weight: 800;">Пригласить друзей в событие</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">Друзья перейдут по ссылке и сразу попадут в расчёт</div>
+              </div>
+            </div>
+
+            <div class="invite-link-box">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+              </svg>
+              <span>${escapeHtml(deepLink)}</span>
+            </div>
+
+            <div class="invite-actions">
+              <button class="btn btn-primary" data-action="share-tg-chat">
+                ✈️ Отправить в чат Telegram
+              </button>
+              <button class="btn btn-secondary btn-sm" data-action="copy-invite">
+                📋 Скопировать ссылку
+              </button>
+            </div>
+          </div>
+        `;
+
+        const listHtml = finances.participants.map(p => {
+          const entry = finances.ledger[p.id];
+          const paid = entry ? entry.paidKopecks : 0;
+          const share = entry ? entry.shareKopecks : 0;
+          const net = entry ? entry.netKopecks : 0;
+          const netClass = net > 0 ? 'val-pos' : (net < 0 ? 'val-neg' : 'val-zero');
+          const isMe = p.tg_user_id !== null && Number(p.tg_user_id) === Number(state.user.id);
+
+          const sbpLine = p.phone
+            ? `
+              <div class="participant-sbp-line">
+                <span class="bank-badge ${getBankBadgeClass(p.bank)}">${escapeHtml(p.bank || 'СБП')}</span>
+                <span style="font-size: 12px; color: var(--text-secondary); font-variant-numeric: tabular-nums;">${escapeHtml(p.phone)}</span>
+              </div>
+            `
+            : `<div class="participant-sbp-line"><span style="font-size: 12px; color: var(--text-muted);">Реквизиты СБП не указаны</span></div>`;
+
+          return `
+            <div class="card participant-card">
+              <div class="participant-top">
+                <div class="participant-left">
+                  <div class="avatar avatar-lg" style="background: ${p.color};">${escapeHtml(getInitials(p.name))}</div>
+                  <div class="participant-info">
+                    <div class="participant-name-row">
+                      <span class="participant-name">${escapeHtml(p.name)}</span>
+                      ${p.is_organizer ? '<span class="org-badge">Орг</span>' : ''}
+                      ${p.tg_user_id ? '<span class="tg-linked-badge">Telegram</span>' : ''}
+                      ${isMe ? '<span class="org-badge" style="background: var(--green-soft); color: var(--green-dark);">Вы</span>' : ''}
+                    </div>
+                    ${sbpLine}
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 5px;">
+                  <button class="mini-icon-action" data-action="edit-participant" data-id="${escapeHtml(p.id)}" title="Редактировать СБП">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 20h9"/>
+                      <path d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                  </button>
+                  <button class="mini-icon-action danger" data-action="delete-participant" data-id="${escapeHtml(p.id)}" title="Удалить">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <div class="participant-metrics">
+                <div class="p-metric-box">
+                  <span class="p-metric-label">Потратил</span>
+                  <span class="p-metric-val num">${formatKopecks(paid)}</span>
+                </div>
+                <div class="p-metric-box">
+                  <span class="p-metric-label">Доля</span>
+                  <span class="p-metric-val num">${formatKopecks(share)}</span>
+                </div>
+                <div class="p-metric-box">
+                  <span class="p-metric-label">Баланс</span>
+                  <span class="p-metric-val num ${netClass}">${formatKopecks(net, true)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return inviteCard + `
+          <div class="section-header">
+            <span class="section-title">Участники и реквизиты СБП</span>
+            <span class="section-count">${finances.participants.length} чел.</span>
+          </div>
+          ${listHtml}
+          <button class="btn btn-secondary btn-block" data-action="add-participant" style="margin-top: 6px;">
+            + Добавить участника
+          </button>
+        `;
+      }
+
+      /* ------------------------------------------------------------------------
+         8. MODALS & ASYNC SUPABASE MUTATIONS
+         ------------------------------------------------------------------------ */
+      function openModal(id) {
+        document.getElementById(id).classList.add('open');
+      }
+
+      function closeModal(id) {
+        document.getElementById(id).classList.remove('open');
+        if (id === 'joinEventModal' && state.activeEvent) {
+          invitePromptDismissedForEvent = state.activeEvent.id;
+        }
+      }
+
+      function showCustomConfirm({ title, message, confirmText = 'Подтвердить', danger = false, hideCancel = false, onConfirm }) {
+        document.getElementById('confirmTitle').textContent = title;
+        document.getElementById('confirmMessage').innerHTML = message;
+        const actions = document.getElementById('confirmActions');
+        actions.innerHTML = '';
+
+        if (!hideCancel) {
+          const cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button';
+          cancelBtn.className = 'btn btn-secondary';
+          cancelBtn.style.flex = '1';
+          cancelBtn.textContent = 'Отмена';
+          cancelBtn.onclick = () => closeModal('confirmModal');
+          actions.appendChild(cancelBtn);
+        }
+
+        const okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.className = `btn ${danger ? 'btn-soft-red' : 'btn-primary'}`;
+        okBtn.style.flex = '1';
+        okBtn.textContent = confirmText;
+        okBtn.onclick = () => {
+          closeModal('confirmModal');
+          if (typeof onConfirm === 'function') onConfirm();
+        };
+        actions.appendChild(okBtn);
+
+        openModal('confirmModal');
+      }
+
+      /* --- Modal 1: Create New Event in Supabase --- */
+      function renderEmojiGrid(containerId, activeEmoji, onSelect) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = EVENT_EMOJIS.map(e => `
+          <button type="button" class="emoji-option ${e === activeEmoji ? 'active' : ''}" data-emoji="${e}">${e}</button>
+        `).join('');
+        container.querySelectorAll('.emoji-option').forEach(btn => {
+          btn.onclick = () => onSelect(btn.dataset.emoji);
+        });
+      }
+
+      function openCreateEventModal() {
+        document.getElementById('newEventTitleInput').value = '';
+        document.getElementById('newEventDateInput').value = getTodayISO();
+        document.getElementById('newEventCreatorNameInput').value = state.user.name;
+        document.getElementById('newEventCreatorPhoneInput').value = '';
+        document.getElementById('newEventCreatorBankSelect').value = '';
+        document.getElementById('newEventFriendInput').value = '';
+        newEventEmoji = '🌲';
+        newEventFriends = [];
+
+        const selectEmoji = emoji => {
+          newEventEmoji = emoji;
+          renderEmojiGrid('newEventEmojiGrid', newEventEmoji, selectEmoji);
+        };
+        renderEmojiGrid('newEventEmojiGrid', newEventEmoji, selectEmoji);
+        renderNewEventFriendsChips();
+        openModal('createEventModal');
+      }
+
+      function renderNewEventFriendsChips() {
+        document.getElementById('newEventFriendsCount').textContent = `${newEventFriends.length} друзей`;
+        const box = document.getElementById('newEventFriendsChips');
+        box.innerHTML = newEventFriends.map((name, idx) => `
+          <span class="member-chip">
+            ${escapeHtml(name)}
+            <button type="button" class="member-chip-remove" data-remove-idx="${idx}" aria-label="Удалить">✕</button>
+          </span>
+        `).join('');
+        box.querySelectorAll('[data-remove-idx]').forEach(btn => {
+          btn.onclick = () => {
+            newEventFriends.splice(parseInt(btn.dataset.removeIdx, 10), 1);
+            renderNewEventFriendsChips();
+          };
+        });
+      }
+
+      function addInitialFriendFromInput() {
+        const input = document.getElementById('newEventFriendInput');
+        const raw = input.value.trim();
+        if (!raw) return;
+        raw.split(',').map(s => s.trim()).filter(Boolean).forEach(name => {
+          if (!newEventFriends.includes(name)) newEventFriends.push(name);
+        });
+        input.value = '';
+        renderNewEventFriendsChips();
+        input.focus();
+      }
+
+      async function createNewEventInSupabase() {
+        const title = document.getElementById('newEventTitleInput').value.trim();
+        const eventDate = document.getElementById('newEventDateInput').value || getTodayISO();
+        const creatorName = document.getElementById('newEventCreatorNameInput').value.trim() || state.user.name;
+        const creatorPhone = document.getElementById('newEventCreatorPhoneInput').value.trim();
+        const creatorBank = document.getElementById('newEventCreatorBankSelect').value;
+
+        const pendingFriend = document.getElementById('newEventFriendInput').value.trim();
+        if (pendingFriend && !newEventFriends.includes(pendingFriend)) {
+          newEventFriends.push(pendingFriend);
+        }
+
+        if (!title) {
+          showToast('Введите название события');
+          document.getElementById('newEventTitleInput').focus();
+          return;
+        }
+
+        const btn = document.getElementById('confirmCreateEventBtn');
+        btn.disabled = true;
+        btn.textContent = 'Создаём...';
+
+        try {
+          const { data: evData, error: evErr } = await supabaseClient
+            .from('events')
+            .insert({
+              title,
+              event_date: eventDate,
+              emoji: newEventEmoji,
+              creator_tg_id: state.user.id
+            })
+            .select()
+            .single();
+
+          if (evErr) throw evErr;
+
+          const participantRows = [
+            {
+              event_id: evData.id,
+              tg_user_id: state.user.id,
+              name: creatorName,
+              phone: creatorPhone,
+              bank: creatorBank,
+              is_organizer: true
+            },
+            ...newEventFriends.map(friendName => ({
+              event_id: evData.id,
+              tg_user_id: null,
+              name: friendName,
+              phone: '',
+              bank: '',
+              is_organizer: false
+            }))
+          ];
+
+          const { error: partErr } = await supabaseClient
+            .from('participants')
+            .insert(participantRows);
+
+          if (partErr) throw partErr;
+
+          addSavedEventId(evData.id);
+          closeModal('createEventModal');
+          showToast(`Событие «${title}» создано 🎉`);
+          await loadEventDetails(evData.id, false, false);
+        } catch (err) {
+          console.error('Error creating event:', err);
+          showToast('Ошибка при создании события');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Создать событие';
+        }
+      }
+
+      /* --- Demo Event Creator in Supabase ("Поездка на природу") --- */
+      async function createDemoEventInSupabase() {
+        showToast('Создаём демо-событие в облаке...');
+        try {
+          const { data: evData, error: evErr } = await supabaseClient
+            .from('events')
+            .insert({
+              title: 'Поездка на природу',
+              event_date: getTodayISO(),
+              emoji: '🌲',
+              creator_tg_id: state.user.id
+            })
+            .select()
+            .single();
+
+          if (evErr) throw evErr;
+
+          const demoPeople = [
+            { event_id: evData.id, tg_user_id: state.user.id, name: state.user.name, phone: '+7 999 111-22-33', bank: 'Т-Банк', is_organizer: true },
+            { event_id: evData.id, tg_user_id: null, name: 'Максим', phone: '+7 999 222-33-44', bank: 'Сбер', is_organizer: false },
+            { event_id: evData.id, tg_user_id: null, name: 'Дмитрий', phone: '+7 999 333-44-55', bank: 'Альфа', is_organizer: false },
+            { event_id: evData.id, tg_user_id: null, name: 'Ольга', phone: '', bank: '', is_organizer: false },
+            { event_id: evData.id, tg_user_id: null, name: 'Иван', phone: '', bank: '', is_organizer: false },
+            { event_id: evData.id, tg_user_id: null, name: 'Мария', phone: '', bank: '', is_organizer: false },
+            { event_id: evData.id, tg_user_id: null, name: 'Сергей', phone: '', bank: '', is_organizer: false }
+          ];
+
+          const { data: insertedParts, error: partErr } = await supabaseClient
+            .from('participants')
+            .insert(demoPeople)
+            .select()
+            .order('created_at', { ascending: true });
+
+          if (partErr) throw partErr;
+
+          const pOrg = insertedParts[0];
+          const pMax = insertedParts[1];
+          const pDim = insertedParts[2];
+          const pIvan = insertedParts[4];
+
+          // Build exact kopeck-balanced splits maps
+          const houseSplits = buildEqualSplitsMap(1000000, insertedParts.map(p => p.id));
+          const hookahSplits = buildEqualSplitsMap(500000, [pOrg.id, pMax.id, pDim.id, pIvan.id]);
+          const meatSplits = buildEqualSplitsMap(300000, insertedParts.map(p => p.id));
+
+          const { error: expErr } = await supabaseClient
+            .from('expenses')
+            .insert([
+              {
+                event_id: evData.id,
+                title: 'Аренда дома',
+                amount: 10000,
+                paid_by: pMax.id,
+                split_mode: 'equal',
+                splits: houseSplits
+              },
+              {
+                event_id: evData.id,
+                title: 'Кальян и табак',
+                amount: 5000,
+                paid_by: pDim.id,
+                split_mode: 'equal',
+                splits: hookahSplits
+              },
+              {
+                event_id: evData.id,
+                title: 'Мясо и угли',
+                amount: 3000,
+                paid_by: pOrg.id,
+                split_mode: 'equal',
+                splits: meatSplits
+              }
+            ]);
+
+          if (expErr) throw expErr;
+
+          addSavedEventId(evData.id);
+          showToast('Демо-событие «Поездка на природу» готово! 🌲');
+          await loadEventDetails(evData.id, false, false);
+        } catch (err) {
+          console.error('Error creating demo event:', err);
+          showToast('Ошибка при создании демо-события');
+        }
+      }
+
+      /* --- Modal 2: Edit / Delete Event --- */
+      function openEditEventModal() {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        document.getElementById('editEventTitleInput').value = ev.title;
+        document.getElementById('editEventDateInput').value = ev.event_date || getTodayISO();
+        editEventEmoji = ev.emoji || '🌲';
+        const selectEmoji = emoji => {
+          editEventEmoji = emoji;
+          renderEmojiGrid('editEventEmojiGrid', editEventEmoji, selectEmoji);
+        };
+        renderEmojiGrid('editEventEmojiGrid', editEventEmoji, selectEmoji);
+        openModal('editEventModal');
+      }
+
+      async function saveEventSettingsInSupabase() {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        const title = document.getElementById('editEventTitleInput').value.trim();
+        const eventDate = document.getElementById('editEventDateInput').value;
+        if (!title) {
+          showToast('Название не может быть пустым');
+          return;
+        }
+
+        const btn = document.getElementById('saveEventSettingsBtn');
+        btn.disabled = true;
+        try {
+          const { error } = await supabaseClient
+            .from('events')
+            .update({ title, event_date: eventDate || ev.event_date, emoji: editEventEmoji })
+            .eq('id', ev.id);
+
+          if (error) throw error;
+          closeModal('editEventModal');
+          showToast('Событие обновлено ✓');
+          await loadEventDetails(ev.id, true, false);
+        } catch (err) {
+          console.error(err);
+          showToast('Ошибка сохранения события');
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      /* --- Modal 3: Add / Edit Expense (Equal & Manual Split) --- */
+      function buildEqualSplitsMap(totalKop, selectedIds) {
+        const splits = {};
+        if (!selectedIds || selectedIds.length === 0) return splits;
+        const base = Math.floor(totalKop / selectedIds.length);
+        let rem = totalKop - base * selectedIds.length;
+        selectedIds.forEach(uid => {
+          const extra = rem > 0 ? 1 : 0;
+          if (rem > 0) rem--;
+          splits[uid] = Number(((base + extra) / 100).toFixed(2));
+        });
+        return splits;
+      }
+
+      function openExpenseModal(expenseId = null) {
+        const ev = state.activeEvent;
+        if (!ev || !ev.participants || ev.participants.length === 0) {
+          showToast('Сначала добавьте участника в событие');
+          return;
+        }
+
+        const finances = computeEventFinances(ev);
+        const editing = expenseId ? ev.expenses.find(e => e.id === expenseId) : null;
+
+        document.getElementById('expenseModalTitle').textContent = editing ? 'Редактировать трату' : 'Новая трата';
+        document.getElementById('expIdInput').value = editing ? editing.id : '';
+        document.getElementById('expTitleInput').value = editing ? editing.title : '';
+        document.getElementById('expAmountInput').value = editing ? Number(editing.amount) : '';
+
+        const delBtn = document.getElementById('deleteExpenseInModalBtn');
+        delBtn.style.display = editing ? 'inline-flex' : 'none';
+
+        renderQuickExpenseTags();
+
+        const payerSelect = document.getElementById('expPayerSelect');
+        const defaultPayer = editing ? editing.paid_by : state.viewerParticipantId;
+        payerSelect.innerHTML = finances.participants.map(p =>
+          `<option value="${escapeHtml(p.id)}" ${p.id === defaultPayer ? 'selected' : ''}>${escapeHtml(p.name)}</option>`
+        ).join('');
+
+        // Equal checklist pre-selection
+        const splitsObj = editing && editing.splits ? editing.splits : {};
+        const checkedIds = new Set(
+          editing
+            ? Object.entries(splitsObj).filter(([, val]) => Number(val) > 0).map(([uid]) => uid)
+            : finances.participants.map(p => p.id)
+        );
+        if (checkedIds.size === 0) {
+          finances.participants.forEach(p => checkedIds.add(p.id));
+        }
+        renderSplitChecklist(finances.participants, checkedIds);
+
+        // Manual inputs pre-fill
+        const initialShares = {};
+        if (editing && editing.split_mode === 'manual') {
+          finances.participants.forEach(p => {
+            const val = Number(splitsObj[p.id] || 0);
+            initialShares[p.id] = val > 0 ? val : '';
+          });
+        }
+        renderManualSplitList(finances.participants, initialShares);
+
+        const mode = editing && editing.split_mode === 'manual' ? 'manual' : 'equal';
+        setExpenseSplitMode(mode);
+
+        openModal('expenseModal');
+      }
+
+      function renderQuickExpenseTags() {
+        const row = document.getElementById('quickExpenseTagsRow');
+        row.innerHTML = QUICK_EXPENSE_PRESETS.map(p => `
+          <button type="button" class="tag-chip" data-preset="${escapeHtml(p.label)}">
+            ${p.icon} ${escapeHtml(p.label)}
+          </button>
+        `).join('');
+      }
+
+      function renderSplitChecklist(participants, checkedSet) {
+        const grid = document.getElementById('splitChecklist');
+        grid.innerHTML = participants.map(p => {
+          const isChecked = checkedSet.has(p.id);
+          return `
+            <div class="check-person ${isChecked ? 'checked' : ''}" data-split-uid="${escapeHtml(p.id)}">
+              <div class="custom-checkbox">${isChecked ? '✓' : ''}</div>
+              <span class="avatar avatar-xs" style="background: ${p.color};">${escapeHtml(getInitials(p.name))}</span>
+              <span class="check-person-name">${escapeHtml(p.name)}</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function renderManualSplitList(participants, sharesMap = {}) {
+        const list = document.getElementById('manualSplitList');
+        list.innerHTML = participants.map(p => {
+          const val = sharesMap[p.id] !== undefined && sharesMap[p.id] !== '' ? sharesMap[p.id] : '';
+          const hasVal = val !== '' && Number(val) > 0;
+          return `
+            <div class="manual-row ${hasVal ? 'has-value' : ''}">
+              <div class="manual-person-info">
+                <span class="avatar avatar-sm" style="background: ${p.color};">${escapeHtml(getInitials(p.name))}</span>
+                <span class="manual-person-name">${escapeHtml(p.name)}</span>
+              </div>
+              <div class="manual-input-wrap">
+                <input
+                  type="number"
+                  class="manual-amount-input"
+                  data-manual-uid="${escapeHtml(p.id)}"
+                  value="${escapeHtml(val)}"
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                  inputmode="decimal"
+                  aria-label="Сумма для ${escapeHtml(p.name)}"
+                />
+                <span class="manual-rub-suffix">₽</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function setExpenseSplitMode(mode) {
+        currentSplitModeInModal = mode;
+        document.getElementById('modeEqualBtn').classList.toggle('active', mode === 'equal');
+        document.getElementById('modeManualBtn').classList.toggle('active', mode === 'manual');
+        document.getElementById('equalSplitPanel').style.display = mode === 'equal' ? 'block' : 'none';
+        document.getElementById('manualSplitPanel').style.display = mode === 'manual' ? 'block' : 'none';
+        updateExpenseValidation();
+      }
+
+      function getSelectedSplitIdsFromModal() {
+        return Array.from(document.querySelectorAll('#splitChecklist .check-person.checked'))
+          .map(el => el.dataset.splitUid);
+      }
+
+      function getManualSharesKopeksFromModal() {
+        const map = {};
+        let sumKop = 0;
+        let hasInvalid = false;
+
+        document.querySelectorAll('#manualSplitList .manual-amount-input').forEach(inp => {
+          const uid = inp.dataset.manualUid;
+          const kop = rublesToKopeks(inp.value);
+          const row = inp.closest('.manual-row');
+
+          if (Number.isNaN(kop)) {
+            hasInvalid = true;
+            map[uid] = 0;
+            if (row) row.classList.remove('has-value');
+          } else {
+            map[uid] = kop;
+            sumKop += kop;
+            if (row) row.classList.toggle('has-value', kop > 0);
+          }
+        });
+
+        return { map, sumKop, hasInvalid };
+      }
+
+      /**
+       * Distributes the remaining unallocated amount equally across empty/zero participants
+       * (or across everyone if none are empty or remainder <= 0).
+       */
+      function distributeRemainderEqually() {
+        const totalKop = rublesToKopeks(document.getElementById('expAmountInput').value);
+        if (Number.isNaN(totalKop) || totalKop <= 0) {
+          showToast('Сначала укажите общую сумму чека');
+          document.getElementById('expAmountInput').focus();
+          return;
+        }
+
+        const inputs = Array.from(document.querySelectorAll('#manualSplitList .manual-amount-input'));
+        if (inputs.length === 0) return;
+
+        let allocatedKop = 0;
+        const emptyInputs = [];
+
+        inputs.forEach(inp => {
+          const kop = rublesToKopeks(inp.value);
+          if (!Number.isNaN(kop) && kop > 0) {
+            allocatedKop += kop;
+          } else {
+            emptyInputs.push(inp);
+          }
+        });
+
+        const targets = emptyInputs.length > 0 && allocatedKop < totalKop ? emptyInputs : inputs;
+        const amountToSplit = targets === inputs ? totalKop : (totalKop - allocatedKop);
+
+        if (amountToSplit <= 0) {
+          showToast('Остаток уже равен 0 ₽');
+          return;
+        }
+
+        const base = Math.floor(amountToSplit / targets.length);
+        let rem = amountToSplit - base * targets.length;
+
+        targets.forEach(inp => {
+          const extra = rem > 0 ? 1 : 0;
+          if (rem > 0) rem--;
+          inp.value = kopeksToInputString(base + extra);
+        });
+
+        updateExpenseValidation();
+      }
+
+      function clearManualInputs() {
+        document.querySelectorAll('#manualSplitList .manual-amount-input').forEach(inp => {
+          inp.value = '';
+        });
+        updateExpenseValidation();
+      }
+
+      function updateExpenseValidation() {
+        const bar = document.getElementById('expenseValidationBar');
+        const saveBtn = document.getElementById('saveExpenseBtn');
+        const totalKop = rublesToKopeks(document.getElementById('expAmountInput').value);
+
+        bar.className = 'validation-bar';
+
+        if (Number.isNaN(totalKop) || totalKop <= 0) {
+          bar.classList.add('state-under');
+          bar.innerHTML = `<span>Укажите сумму чека больше 0 ₽</span><span class="validation-sub">0 ₽</span>`;
+          saveBtn.disabled = true;
+          return;
+        }
+
+        if (currentSplitModeInModal === 'equal') {
+          const selected = getSelectedSplitIdsFromModal();
+          if (selected.length === 0) {
+            bar.classList.add('state-over');
+            bar.innerHTML = `<span>Выберите хотя бы 1 участника</span><span class="validation-sub">0 чел.</span>`;
+            saveBtn.disabled = true;
+            return;
+          }
+          const perKop = Math.round(totalKop / selected.length);
+          bar.classList.add('state-ok');
+          bar.innerHTML = `
+            <span class="num">По <strong>${formatKopecks(perKop)}</strong> с человека</span>
+            <span class="validation-sub">Выбрано ${selected.length} чел.</span>
+          `;
+          saveBtn.disabled = false;
+        } else {
+          const { sumKop, hasInvalid } = getManualSharesKopeksFromModal();
+
+          if (hasInvalid) {
+            bar.classList.add('state-over');
+            bar.innerHTML = `<span>Суммы не могут быть отрицательными</span><span class="validation-sub">Ошибка</span>`;
+            saveBtn.disabled = true;
+            return;
+          }
+
+          if (sumKop < totalKop) {
+            const diff = totalKop - sumKop;
+            bar.classList.add('state-under');
+            bar.innerHTML = `
+              <span class="num">Осталось распределить: <strong>${formatKopecks(diff)}</strong></span>
+              <span class="validation-sub num">${formatKopecks(sumKop)} / ${formatKopecks(totalKop)}</span>
+            `;
+            saveBtn.disabled = true;
+          } else if (sumKop > totalKop) {
+            const diff = sumKop - totalKop;
+            bar.classList.add('state-over');
+            bar.innerHTML = `
+              <span class="num">Превышение на: <strong>${formatKopecks(diff)}</strong></span>
+              <span class="validation-sub num">${formatKopecks(sumKop)} / ${formatKopecks(totalKop)}</span>
+            `;
+            saveBtn.disabled = true;
+          } else {
+            bar.classList.add('state-ok');
+            bar.innerHTML = `
+              <span>Сумма сходится ✅</span>
+              <span class="validation-sub num">${formatKopecks(totalKop)}</span>
+            `;
+            saveBtn.disabled = false;
+          }
+        }
+      }
+
+      async function saveExpenseInSupabase() {
+        const ev = state.activeEvent;
+        if (!ev) return;
+
+        const id = document.getElementById('expIdInput').value;
+        const title = document.getElementById('expTitleInput').value.trim();
+        const totalKop = rublesToKopeks(document.getElementById('expAmountInput').value);
+        const paidBy = document.getElementById('expPayerSelect').value;
+
+        if (!title) {
+          showToast('Введите название траты');
+          document.getElementById('expTitleInput').focus();
+          return;
+        }
+        if (Number.isNaN(totalKop) || totalKop <= 0) {
+          showToast('Укажите сумму больше 0 ₽');
+          return;
+        }
+
+        let splits = {};
+        if (currentSplitModeInModal === 'equal') {
+          const selected = getSelectedSplitIdsFromModal();
+          if (selected.length === 0) {
+            showToast('Выберите хотя бы одного участника');
+            return;
+          }
+          splits = buildEqualSplitsMap(totalKop, selected);
+        } else {
+          const { map, sumKop, hasInvalid } = getManualSharesKopeksFromModal();
+          if (hasInvalid || sumKop !== totalKop) {
+            showToast('Сумма долей должна точно сходиться с суммой чека');
+            return;
+          }
+          Object.entries(map).forEach(([uid, kop]) => {
+            splits[uid] = Number((kop / 100).toFixed(2));
+          });
+        }
+
+        const saveBtn = document.getElementById('saveExpenseBtn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Сохраняем...';
+
+        try {
+          const payload = {
+            event_id: ev.id,
+            title,
+            amount: Number((totalKop / 100).toFixed(2)),
+            paid_by: paidBy,
+            split_mode: currentSplitModeInModal,
+            splits
+          };
+
+          if (id) {
+            const { error } = await supabaseClient.from('expenses').update(payload).eq('id', id);
+            if (error) throw error;
+            showToast('Трата обновлена ✓');
+          } else {
+            const { error } = await supabaseClient.from('expenses').insert(payload);
+            if (error) throw error;
+            showToast('Трата добавлена ✓');
+          }
+
+          closeModal('expenseModal');
+          await loadEventDetails(ev.id, true, false);
+        } catch (err) {
+          console.error('Error saving expense:', err);
+          showToast('Ошибка сохранения траты');
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Сохранить трату';
+        }
+      }
+
+      async function deleteExpenseById(expenseId) {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        const exp = ev.expenses.find(x => x.id === expenseId);
+        if (!exp) return;
+
+        showCustomConfirm({
+          title: 'Удалить трату?',
+          message: `Удалить чек <strong>«${escapeHtml(exp.title)}»</strong> на сумму <strong>${formatKopecks(Math.round(Number(exp.amount) * 100))}</strong>?`,
+          confirmText: 'Удалить',
+          danger: true,
+          onConfirm: async () => {
+            try {
+              const { error } = await supabaseClient.from('expenses').delete().eq('id', exp.id);
+              if (error) throw error;
+              closeModal('expenseModal');
+              showToast('Трата удалена');
+              await loadEventDetails(ev.id, true, false);
+            } catch (err) {
+              console.error(err);
+              showToast('Не удалось удалить трату');
+            }
+          }
+        });
+      }
+
+      /* --- Toggle Paid Transfer in Supabase (paid_transfers) --- */
+      async function togglePaidTransferInSupabase(transferIdx) {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        const finances = computeEventFinances(ev);
+        const t = finances.transfers[transferIdx];
+        if (!t) return;
+
+        try {
+          if (t.isPaid && t.paidRow) {
+            const { error } = await supabaseClient
+              .from('paid_transfers')
+              .delete()
+              .eq('id', t.paidRow.id);
+            if (error) throw error;
+            showToast('Отметка об оплате снята');
+          } else {
+            const { error } = await supabaseClient
+              .from('paid_transfers')
+              .insert({
+                event_id: ev.id,
+                from_participant_id: t.fromId,
+                to_participant_id: t.toId,
+                amount: Number((t.amountKopecks / 100).toFixed(2))
+              });
+            if (error) throw error;
+            showToast('Отмечено как оплачено ✅');
+          }
+          await loadEventDetails(ev.id, true, false);
+        } catch (err) {
+          console.error('Error toggling paid transfer:', err);
+          showToast('Ошибка обновления статуса оплаты');
+        }
+      }
+
+      /* --- Modal 4: Add / Edit Participant & SBP --- */
+      function openParticipantModal(participantId = null) {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        const editing = participantId ? ev.participants.find(p => p.id === participantId) : null;
+
+        document.getElementById('participantModalTitle').textContent = editing
+          ? `СБП: ${editing.name}`
+          : 'Новый участник';
+        document.getElementById('partIdInput').value = editing ? editing.id : '';
+        document.getElementById('partNameInput').value = editing ? editing.name : '';
+        document.getElementById('partPhoneInput').value = editing ? (editing.phone || '') : '';
+
+        const bankSelect = document.getElementById('partBankSelect');
+        const customGroup = document.getElementById('customBankGroup');
+        const customInput = document.getElementById('partCustomBankInput');
+
+        if (editing && editing.bank) {
+          if (KNOWN_BANKS.includes(editing.bank)) {
+            bankSelect.value = editing.bank;
+            customGroup.style.display = 'none';
+            customInput.value = '';
+          } else {
+            bankSelect.value = '__custom__';
+            customGroup.style.display = 'block';
+            customInput.value = editing.bank;
+          }
+        } else {
+          bankSelect.value = '';
+          customGroup.style.display = 'none';
+          customInput.value = '';
+        }
+
+        openModal('participantModal');
+      }
+
+      async function saveParticipantInSupabase() {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        const id = document.getElementById('partIdInput').value;
+        const name = document.getElementById('partNameInput').value.trim();
+        const phone = document.getElementById('partPhoneInput').value.trim();
+        const bankVal = document.getElementById('partBankSelect').value;
+        const bank = bankVal === '__custom__'
+          ? document.getElementById('partCustomBankInput').value.trim()
+          : bankVal;
+
+        if (!name) {
+          showToast('Введите имя участника');
+          document.getElementById('partNameInput').focus();
+          return;
+        }
+
+        const btn = document.getElementById('saveParticipantBtn');
+        btn.disabled = true;
+
+        try {
+          if (id) {
+            const { error } = await supabaseClient
+              .from('participants')
+              .update({ name, phone, bank })
+              .eq('id', id);
+            if (error) throw error;
+            showToast('Реквизиты сохранены ✓');
+          } else {
+            const { error } = await supabaseClient
+              .from('participants')
+              .insert({
+                event_id: ev.id,
+                tg_user_id: null,
+                name,
+                phone,
+                bank,
+                is_organizer: false
+              });
+            if (error) throw error;
+            showToast(`${name} добавлен(а) в событие ✓`);
+          }
+
+          closeModal('participantModal');
+          await loadEventDetails(ev.id, true, false);
+        } catch (err) {
+          console.error(err);
+          showToast('Ошибка сохранения участника');
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      async function handleDeleteParticipant(participantId) {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        const p = ev.participants.find(x => x.id === participantId);
+        if (!p) return;
+
+        if (ev.participants.length <= 1) {
+          showCustomConfirm({
+            title: 'Нельзя удалить',
+            message: 'В событии должен остаться хотя бы один участник.',
+            confirmText: 'Понятно',
+            hideCancel: true
+          });
+          return;
+        }
+
+        const tiedExpenses = ev.expenses.filter(exp => {
+          if (exp.paid_by === p.id) return true;
+          const splits = exp.splits || {};
+          return Number(splits[p.id] || 0) > 0;
+        });
+
+        if (tiedExpenses.length > 0) {
+          const listStr = tiedExpenses.map(e => `• ${escapeHtml(e.title)}`).join('<br>');
+          showCustomConfirm({
+            title: 'Участник указан в чеках',
+            message: `Нельзя удалить <strong>${escapeHtml(p.name)}</strong>, пока этот человек участвует в чеках:<br><br>${listStr}<br><br>Сначала отредактируйте или удалите эти траты.`,
+            confirmText: 'Понятно',
+            hideCancel: true
+          });
+          return;
+        }
+
+        showCustomConfirm({
+          title: 'Удалить участника?',
+          message: `Удалить <strong>${escapeHtml(p.name)}</strong> из события «${escapeHtml(ev.title)}»?`,
+          confirmText: 'Удалить',
+          danger: true,
+          onConfirm: async () => {
+            try {
+              const { error } = await supabaseClient.from('participants').delete().eq('id', p.id);
+              if (error) throw error;
+              showToast(`${p.name} удалён(а)`);
+              await loadEventDetails(ev.id, true, false);
+            } catch (err) {
+              console.error(err);
+              showToast('Не удалось удалить участника');
+            }
+          }
+        });
+      }
+
+      /* --- Modal 5: Deep-Link Invite Join Modal ("Присоединиться к событию") --- */
+      function openJoinEventModal(ev) {
+        const finances = computeEventFinances(ev);
+        const organizer = finances.participants.find(p => p.is_organizer);
+        const unlinkedSlots = finances.participants.filter(p => p.tg_user_id === null);
+
+        const body = document.getElementById('joinEventModalBody');
+        body.innerHTML = `
+          <div class="card" style="background: var(--tg-blue-soft); border-color: rgba(36, 129, 204, 0.28); margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 28px;">${escapeHtml(ev.emoji || '🧾')}</span>
+              <div>
+                <div style="font-size: 16px; font-weight: 800;">${escapeHtml(ev.title)}</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">
+                  📅 ${escapeHtml(formatRuDate(ev.event_date))}${organizer ? ` · Орг: ${escapeHtml(organizer.name)}` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          ${unlinkedSlots.length > 0 ? `
+            <div class="form-group">
+              <div class="form-label">
+                <span>Вариант 1: Вы уже есть в списке? Нажмите на своё имя</span>
+              </div>
+              ${unlinkedSlots.map(slot => `
+                <button type="button" class="claim-slot-btn" data-claim-slot-id="${escapeHtml(slot.id)}">
+                  <div style="display: flex; align-items: center; gap: 9px;">
+                    <span class="avatar avatar-sm" style="background: ${slot.color};">${escapeHtml(getInitials(slot.name))}</span>
+                    <span style="font-size: 14px; font-weight: 700;">${escapeHtml(slot.name)}</span>
+                  </div>
+                  <span style="font-size: 12px; font-weight: 700; color: var(--tg-blue);">Это я →</span>
+                </button>
+              `).join('')}
+            </div>
+            <div style="text-align: center; font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 10px 0;">
+              — или войдите как новый участник —
+            </div>
+          ` : ''}
+
+          <div class="form-group">
+            <label class="form-label" for="joinNewNameInput">Ваше имя в событии</label>
+            <input type="text" id="joinNewNameInput" class="form-input" value="${escapeHtml(state.user.name)}" maxlength="32" />
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px;">
+            <div>
+              <label class="form-label" for="joinNewPhoneInput">Телефон СБП</label>
+              <input type="tel" id="joinNewPhoneInput" class="form-input" placeholder="+7 999 123-45-67" maxlength="22" style="font-size: 13.5px;" />
+            </div>
+            <div>
+              <label class="form-label" for="joinNewBankSelect">Банк СБП</label>
+              <select id="joinNewBankSelect" class="form-select" style="font-size: 13.5px;">
+                <option value="">— Не указан —</option>
+                <option value="Т-Банк">Т-Банк</option>
+                <option value="Сбер">Сбер</option>
+                <option value="Альфа">Альфа</option>
+                <option value="ВТБ">ВТБ</option>
+                <option value="Райффайзен">Райффайзен</option>
+                <option value="Озон Банк">Озон Банк</option>
+                <option value="Яндекс Пэй">Яндекс Пэй</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-block" id="confirmJoinAsNewBtn">
+            Войти как новый участник
+          </button>
+        `;
+
+        // Claim existing unlinked slot
+        body.querySelectorAll('[data-claim-slot-id]').forEach(btn => {
+          btn.onclick = async () => {
+            const slotId = btn.dataset.claimSlotId;
+            btn.disabled = true;
+            try {
+              const { error } = await supabaseClient
+                .from('participants')
+                .update({ tg_user_id: state.user.id })
+                .eq('id', slotId);
+
+              if (error) throw error;
+              closeModal('joinEventModal');
+              showToast('Вы привязали свой профиль к событию! 🎉');
+              await loadEventDetails(ev.id, true, false);
+            } catch (err) {
+              console.error(err);
+              showToast('Не удалось привязать профиль');
+              btn.disabled = false;
+            }
+          };
+        });
+
+        // Join as brand-new participant
+        document.getElementById('confirmJoinAsNewBtn').onclick = async () => {
+          const name = document.getElementById('joinNewNameInput').value.trim() || state.user.name;
+          const phone = document.getElementById('joinNewPhoneInput').value.trim();
+          const bank = document.getElementById('joinNewBankSelect').value;
+          const joinBtn = document.getElementById('confirmJoinAsNewBtn');
+          joinBtn.disabled = true;
+
+          try {
+            const { error } = await supabaseClient
+              .from('participants')
+              .insert({
+                event_id: ev.id,
+                tg_user_id: state.user.id,
+                name,
+                phone,
+                bank,
+                is_organizer: false
+              });
+
+            if (error) throw error;
+            closeModal('joinEventModal');
+            showToast(`Добро пожаловать в «${ev.title}»! 🎉`);
+            await loadEventDetails(ev.id, true, false);
+          } catch (err) {
+            console.error(err);
+            showToast('Ошибка при входе в событие');
+            joinBtn.disabled = false;
+          }
+        };
+
+        openModal('joinEventModal');
+      }
+
+      /* --- Copy Formatted Summary for Telegram Chat --- */
+      function copySummaryForTelegramChat() {
+        const ev = state.activeEvent;
+        if (!ev) return;
+        const fin = computeEventFinances(ev);
+        const lines = [];
+        lines.push(`🧾 ПОРОВНУ · ${ev.emoji || ''} ${ev.title} (${formatRuDate(ev.event_date)})`);
+        lines.push(`💰 Всего потрачено: ${formatKopecks(fin.totalBudgetKopecks)}`);
+        lines.push(`👥 Участников: ${fin.participants.length} | Чеков: ${ev.expenses.length}`);
+        lines.push('');
+
+        if (fin.transfers.length === 0) {
+          lines.push('🤝 Все участники полностью в расчёте!');
+        } else {
+          lines.push(`💸 Переводы (закрыто ${fin.paidCount} из ${fin.transfers.length}):`);
+          fin.transfers.forEach((t, idx) => {
+            const from = fin.participants.find(p => p.id === t.fromId);
+            const to = fin.participants.find(p => p.id === t.toId);
+            const mark = t.isPaid ? '✅' : '⏳';
+            const sbp = to && to.phone ? ` — ${to.bank || 'СБП'}: ${to.phone}` : '';
+            lines.push(`${idx + 1}. ${mark} ${from.name} → ${to.name}: ${formatKopecks(t.amountKopecks)}${sbp}`);
+          });
+        }
+
+        lines.push('');
+        lines.push(`🔗 Открыть событие: ${getEventDeepLink(ev.id)}`);
+        copyToClipboard(lines.join('\n'), 'Итоги скопированы для чата! 📋');
+      }
+
+      /* ------------------------------------------------------------------------
+         9. EVENT WIRING
+         ------------------------------------------------------------------------ */
+      function initEventListeners() {
+        // Header & FAB Global Actions
+        document.getElementById('appShell').addEventListener('click', e => {
+          const globalBtn = e.target.closest('[data-global-action]');
+          if (!globalBtn) return;
+          const act = globalBtn.dataset.globalAction;
+
+          if (act === 'toggle-theme') {
+            state.theme = state.theme === 'dark' ? 'light' : 'dark';
+            try { localStorage.setItem(THEME_STORAGE_KEY, state.theme); } catch (err) {}
+            renderAll();
+          } else if (act === 'go-events') {
+            state.view = 'events';
+            state.activeEventId = null;
+            state.activeEvent = null;
+            loadEventsList(false);
+            document.getElementById('mainContent').scrollTop = 0;
+          } else if (act === 'open-create-event') {
+            openCreateEventModal();
+          } else if (act === 'open-edit-event') {
+            openEditEventModal();
+          } else if (act === 'quick-share-event') {
+            if (state.activeEvent) shareEventToTelegram(state.activeEvent);
+          } else if (act === 'select-viewer') {
+            state.viewerParticipantId = globalBtn.dataset.uid;
+            renderAll();
+            const p = state.activeEvent && state.activeEvent.participants.find(x => x.id === state.viewerParticipantId);
+            if (p) showToast(`Смотрим как: ${p.name}`);
+          } else if (act === 'open-guest-profile') {
+            document.getElementById('guestNameInput').value = state.user.name;
+            document.getElementById('profileModeNote').textContent = state.user.isTelegram
+              ? `Вы авторизованы через Telegram (ID: ${state.user.id}).`
+              : `Вы открыли приложение в браузере (гостевой ID: ${state.user.id}). Укажите имя для отображения в событиях.`;
+            openModal('guestProfileModal');
+          }
+        });
+
+        // Save Guest / Display Name
+        document.getElementById('saveGuestProfileBtn').addEventListener('click', () => {
+          const val = document.getElementById('guestNameInput').value.trim();
+          if (!val) {
+            showToast('Введите имя');
+            return;
+          }
+          state.user.name = val;
+          if (!state.user.isTelegram) {
+            try {
+              localStorage.setItem(GUEST_USER_STORAGE_KEY, JSON.stringify({ id: state.user.id, name: val }));
+            } catch (e) {}
+          }
+          closeModal('guestProfileModal');
+          renderAll();
+          showToast(`Имя обновлено: ${val}`);
+        });
+
+        // Bottom Navigation Tabs
+        document.querySelectorAll('#bottomNav .nav-item').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.activeTab = btn.dataset.tab;
+            renderAll();
+            document.getElementById('mainContent').scrollTop = 0;
+          });
+        });
+
+        // Delegated Actions in mainContent
+        document.getElementById('mainContent').addEventListener('click', e => {
+          const btn = e.target.closest('[data-action]');
+          if (!btn) return;
+          const action = btn.dataset.action;
+
+          if (action === 'set-filter') {
+            state.eventFilter = btn.dataset.filter;
+            renderAll();
+          } else if (action === 'open-event') {
+            state.activeTab = 'expenses';
+            loadEventDetails(btn.dataset.eventId, false, true);
+            document.getElementById('mainContent').scrollTop = 0;
+          } else if (action === 'create-demo-event') {
+            createDemoEventInSupabase();
+          } else if (action === 'open-join-modal') {
+            if (state.activeEvent) openJoinEventModal(state.activeEvent);
+          } else if (action === 'open-add-expense') {
+            openExpenseModal(null);
+          } else if (action === 'go-summary') {
+            state.activeTab = 'summary';
+            renderAll();
+            document.getElementById('mainContent').scrollTop = 0;
+          } else if (action === 'delete-expense') {
+            e.stopPropagation();
+            deleteExpenseById(btn.dataset.id);
+          } else if (action === 'edit-expense') {
+            openExpenseModal(btn.dataset.id);
+          } else if (action === 'copy-sbp') {
+            copyToClipboard(btn.dataset.phone, `Номер скопирован: ${btn.dataset.phone} (${btn.dataset.bank})`);
+          } else if (action === 'toggle-paid') {
+            togglePaidTransferInSupabase(parseInt(btn.dataset.trIdx, 10));
+          } else if (action === 'toggle-balances') {
+            state.balancesExpanded = !state.balancesExpanded;
+            renderAll();
+          } else if (action === 'copy-chat-summary') {
+            copySummaryForTelegramChat();
+          } else if (action === 'share-tg-chat') {
+            if (state.activeEvent) shareEventToTelegram(state.activeEvent);
+          } else if (action === 'copy-invite') {
+            if (state.activeEvent) {
+              copyToClipboard(getEventDeepLink(state.activeEvent.id), 'Инвайт-ссылка скопирована! 📋');
+            }
+          } else if (action === 'add-participant') {
+            openParticipantModal(null);
+          } else if (action === 'edit-participant') {
+            openParticipantModal(btn.dataset.id);
+          } else if (action === 'delete-participant') {
+            handleDeleteParticipant(btn.dataset.id);
+          }
+        });
+
+        // Create Event Modal listeners
+        document.getElementById('addInitialFriendBtn').addEventListener('click', addInitialFriendFromInput);
+        document.getElementById('newEventFriendInput').addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            addInitialFriendFromInput();
+          }
+        });
+        document.getElementById('confirmCreateEventBtn').addEventListener('click', createNewEventInSupabase);
+
+        // Edit Event Modal listeners
+        document.getElementById('saveEventSettingsBtn').addEventListener('click', saveEventSettingsInSupabase);
+        document.getElementById('deleteCurrentEventBtn').addEventListener('click', () => {
+          const ev = state.activeEvent;
+          if (!ev) return;
+          closeModal('editEventModal');
+          showCustomConfirm({
+            title: 'Удалить событие?',
+            message: `Событие <strong>«${escapeHtml(ev.title)}»</strong> и все его чеки будут удалены из базы данных.`,
+            confirmText: 'Удалить',
+            danger: true,
+            onConfirm: async () => {
+              try {
+                const { error } = await supabaseClient.from('events').delete().eq('id', ev.id);
+                if (error) throw error;
+                removeSavedEventId(ev.id);
+                state.view = 'events';
+                state.activeEventId = null;
+                state.activeEvent = null;
+                showToast('Событие удалено');
+                await loadEventsList(false);
+              } catch (err) {
+                console.error(err);
+                showToast('Ошибка удаления события');
+              }
+            }
+          });
+        });
+
+        // Expense Modal listeners
+        document.getElementById('quickExpenseTagsRow').addEventListener('click', e => {
+          const chip = e.target.closest('.tag-chip');
+          if (!chip) return;
+          const inp = document.getElementById('expTitleInput');
+          inp.value = chip.dataset.preset;
+          inp.focus();
+        });
+
+        document.getElementById('expAmountInput').addEventListener('input', updateExpenseValidation);
+        document.getElementById('modeEqualBtn').addEventListener('click', () => setExpenseSplitMode('equal'));
+        document.getElementById('modeManualBtn').addEventListener('click', () => setExpenseSplitMode('manual'));
+
+        document.getElementById('splitChecklist').addEventListener('click', e => {
+          const item = e.target.closest('.check-person');
+          if (!item) return;
+          item.classList.toggle('checked');
+          item.querySelector('.custom-checkbox').textContent = item.classList.contains('checked') ? '✓' : '';
+          updateExpenseValidation();
+        });
+
+        document.getElementById('selectAllSplitBtn').addEventListener('click', () => {
+          if (!state.activeEvent) return;
+          const fin = computeEventFinances(state.activeEvent);
+          renderSplitChecklist(fin.participants, new Set(fin.participants.map(p => p.id)));
+          updateExpenseValidation();
+        });
+
+        document.getElementById('clearAllSplitBtn').addEventListener('click', () => {
+          if (!state.activeEvent) return;
+          const fin = computeEventFinances(state.activeEvent);
+          renderSplitChecklist(fin.participants, new Set());
+          updateExpenseValidation();
+        });
+
+        document.getElementById('manualSplitList').addEventListener('input', e => {
+          if (e.target.classList.contains('manual-amount-input')) {
+            updateExpenseValidation();
+          }
+        });
+
+        document.getElementById('distributeRemainderBtn').addEventListener('click', distributeRemainderEqually);
+        document.getElementById('clearManualBtn').addEventListener('click', clearManualInputs);
+        document.getElementById('saveExpenseBtn').addEventListener('click', saveExpenseInSupabase);
+        document.getElementById('deleteExpenseInModalBtn').addEventListener('click', () => {
+          const id = document.getElementById('expIdInput').value;
+          if (id) deleteExpenseById(id);
+        });
+
+        // Participant Modal listeners
+        document.getElementById('partBankSelect').addEventListener('change', e => {
+          document.getElementById('customBankGroup').style.display =
+            e.target.value === '__custom__' ? 'block' : 'none';
+        });
+        document.getElementById('saveParticipantBtn').addEventListener('click', saveParticipantInSupabase);
+
+        // Universal Modal Close handlers
+        document.querySelectorAll('[data-close-modal]').forEach(btn => {
+          btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
+        });
+
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+          overlay.addEventListener('click', e => {
+            if (e.target === overlay) closeModal(overlay.id);
+          });
+        });
+
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Escape') {
+            document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+          }
+        });
+
+        // Listen for Telegram theme changes dynamically
+        if (tg && typeof tg.onEvent === 'function') {
+          tg.onEvent('themeChanged', () => {
+            state.theme = tg.colorScheme === 'dark' ? 'dark' : 'light';
+            renderAll();
+          });
+        }
+      }
+
+      /* ------------------------------------------------------------------------
+         10. APPLICATION BOOTSTRAP
+         ------------------------------------------------------------------------ */
+      async function bootstrap() {
+        initEventListeners();
+        setupSupabaseRealtime();
+
+        const deepLinkEventId = extractDeepLinkEventId();
+        if (deepLinkEventId) {
+          await loadEventDetails(deepLinkEventId, false, true);
+        } else {
+          await loadEventsList(false);
+        }
+      }
+
+      bootstrap();
+    })();
+  </script>
+</body>
+</html>

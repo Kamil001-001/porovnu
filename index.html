@@ -960,6 +960,30 @@
       color: var(--emerald);
     }
 
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 26px;
+      padding: 0 9px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .status-badge.pending {
+      background: var(--amber-soft);
+      border: 1px solid var(--amber-border);
+      color: var(--amber);
+    }
+
+    .status-badge.paid {
+      background: var(--emerald-soft);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald);
+    }
+
     .progress-bar-wrap {
       height: 6px;
       border-radius: 99px;
@@ -1648,6 +1672,7 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="3 6 5 6 21 6"/>
                 <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
               </svg>
             </button>
             <button type="button" class="btn btn-primary" id="saveParticipantBtn" style="flex: 1;">Сохранить</button>
@@ -1884,7 +1909,6 @@
           rawParam = hashParams.get('tgWebAppStartParam') || hashParams.get('startapp');
         }
         if (!rawParam) return null;
-        // Strip optional 'ev_' prefix
         return rawParam.startsWith('ev_') ? rawParam.slice(3) : rawParam;
       }
 
@@ -2639,7 +2663,6 @@
       }
 
       function renderEventScreen(ev, ctx, fin) {
-        // Inline participants string: "Участники: Камиль Юсупов (вы), Ваня, Дима, Оля"
         const inlineNames = fin.participants.map(p => {
           const isMe = ctx.myParticipant && p.id === ctx.myParticipant.id;
           return isMe
@@ -2647,7 +2670,6 @@
             : esc(p.name);
         }).join(', ');
 
-        // Organizer-only inspection bar
         let organizerBarHtml = '';
         if (ctx.isOrganizer && fin.participants.length > 0) {
           const pills = fin.participants.map(p => {
@@ -2692,7 +2714,6 @@
           </div>
         `;
 
-        // Inspecting banner when organizer is auditing another participant
         const inspectingBannerHtml = ctx.isInspectingOther ? `
           <div class="inspecting-banner">
             <span>Вы просматриваете расчёт от лица: <strong>${esc(ctx.viewedParticipant.name)}</strong></span>
@@ -2821,6 +2842,12 @@
          ------------------------------------------------------------------------ */
       function renderSettlementTab(ev, ctx, fin) {
         const vp = ctx.viewedParticipant;
+        const isOwnProfile = Boolean(
+          vp &&
+          ctx.myParticipant &&
+          vp.id === ctx.myParticipant.id &&
+          !ctx.isInspectingOther
+        );
         let personalCardHtml = '';
 
         if (vp) {
@@ -2845,6 +2872,20 @@
                 const sbpDisplay = recipient.bank
                   ? `${esc(recipient.bank)} · <strong>${esc(recipient.phone)}</strong>`
                   : `<strong>${esc(recipient.phone)}</strong>`;
+
+                const statusBadgeHtml = t.isPaid
+                  ? `<span class="status-badge paid">Оплачено</span>`
+                  : `<span class="status-badge pending">Ожидание оплаты</span>`;
+
+                // Кнопка оплаты доступна только самому отправителю в своём профиле
+                const footerControlsHtml = isOwnProfile
+                  ? `
+                    ${statusBadgeHtml}
+                    <button type="button" class="btn btn-sm ${t.isPaid ? 'btn-emerald-soft' : 'btn-emerald'}" data-action="toggle-transfer" data-t-index="${t.index}">
+                      ${t.isPaid ? 'Оплачено ✓' : 'Я перевёл'}
+                    </button>
+                  `
+                  : statusBadgeHtml;
 
                 return `
                   <div class="transfer-row-box ${t.isPaid ? 'settled' : ''}">
@@ -2872,12 +2913,7 @@
                     `}
 
                     <div class="transfer-actions-row">
-                      <span class="status-indicator ${t.isPaid ? 'done' : ''}">
-                        ${t.isPaid ? 'Переведено' : 'Ожидает перевода'}
-                      </span>
-                      <button type="button" class="btn btn-sm ${t.isPaid ? 'btn-emerald-soft' : 'btn-emerald'}" data-action="toggle-transfer" data-t-index="${t.index}">
-                        ${t.isPaid ? 'Переведено ✓' : 'Я перевёл'}
-                      </button>
+                      ${footerControlsHtml}
                     </div>
                   </div>
                 `;
@@ -2889,6 +2925,10 @@
               bodyHtml += incoming.map(t => {
                 const sender = fin.participants.find(p => p.id === t.fromId);
                 if (!sender) return '';
+                const statusBadgeHtml = t.isPaid
+                  ? `<span class="status-badge paid">Оплачено</span>`
+                  : `<span class="status-badge pending">Ожидание оплаты</span>`;
+
                 return `
                   <div class="transfer-row-box ${t.isPaid ? 'settled' : ''}">
                     <div class="transfer-row-top">
@@ -2896,12 +2936,7 @@
                       <span class="transfer-amt incoming mono-num">+${formatRubles(t.amountKop)}</span>
                     </div>
                     <div class="transfer-actions-row">
-                      <span class="status-indicator ${t.isPaid ? 'done' : ''}">
-                        ${t.isPaid ? 'Переведено' : 'Ожидается'}
-                      </span>
-                      <button type="button" class="btn btn-sm ${t.isPaid ? 'btn-secondary' : 'btn-emerald-soft'}" data-action="toggle-transfer" data-t-index="${t.index}">
-                        ${t.isPaid ? 'Отменить отметку' : 'Подтвердить получение'}
-                      </button>
+                      ${statusBadgeHtml}
                     </div>
                   </div>
                 `;
@@ -2924,38 +2959,68 @@
           ? Math.round((fin.paidCount / totalTr) * 100)
           : (fin.totalBudgetKop > 0 ? 100 : 0);
 
-        const allTransfersHtml = totalTr === 0
-          ? `
+        // Остальные переводы события (убираем переводы выбранного участника, чтобы не дублировать)
+        const otherTransfers = vp
+          ? fin.transfers.filter(t => t.fromId !== vp.id && t.toId !== vp.id)
+          : fin.transfers;
+
+        let allTransfersSectionHtml = '';
+        if (totalTr === 0) {
+          allTransfersSectionHtml = `
+            <div class="section-row">
+              <span class="section-label">Остальные переводы события</span>
+              <span class="section-meta tabular">0 шт.</span>
+            </div>
             <div class="card empty-box">
               <div class="empty-box-title">Все участники в расчёте</div>
               <p class="empty-box-desc">Взаимных долгов по текущим расходам нет.</p>
             </div>
-          `
-          : fin.transfers.map(t => {
-              const from = fin.participants.find(p => p.id === t.fromId);
-              const to = fin.participants.find(p => p.id === t.toId);
-              if (!from || !to) return '';
-              return `
-                <div class="card" style="padding: 13px 16px; ${t.isPaid ? 'border-color: var(--emerald-border);' : ''}">
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="font-size: 13.5px; font-weight: 600; color: var(--text-primary);">
-                      ${esc(from.name)} <span style="color: var(--text-tertiary);">→</span> ${esc(to.name)}
-                    </div>
-                    <div class="mono-num" style="font-size: 14.5px; font-weight: 600; color: ${t.isPaid ? 'var(--emerald)' : 'var(--text-primary)'};">
-                      ${formatRubles(t.amountKop)}
-                    </div>
+          `;
+        } else if (otherTransfers.length === 0) {
+          allTransfersSectionHtml = `
+            <div class="section-row">
+              <span class="section-label">Остальные переводы события</span>
+              <span class="section-meta tabular">0 шт.</span>
+            </div>
+            <div class="card empty-box" style="padding: 20px 16px;">
+              <p class="empty-box-desc">Других переводов между остальными участниками нет.</p>
+            </div>
+          `;
+        } else {
+          const otherCardsHtml = otherTransfers.map(t => {
+            const from = fin.participants.find(p => p.id === t.fromId);
+            const to = fin.participants.find(p => p.id === t.toId);
+            if (!from || !to) return '';
+
+            const statusBadgeHtml = t.isPaid
+              ? `<span class="status-badge paid">Оплачено</span>`
+              : `<span class="status-badge pending">Ожидание оплаты</span>`;
+
+            return `
+              <div class="card" style="padding: 13px 16px; ${t.isPaid ? 'border-color: var(--emerald-border);' : ''}">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                  <div style="font-size: 13.5px; font-weight: 600; color: var(--text-primary);">
+                    ${esc(from.name)} <span style="color: var(--text-tertiary);">→</span> ${esc(to.name)}
                   </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-                    <span class="status-indicator ${t.isPaid ? 'done' : ''}">
-                      ${t.isPaid ? 'Переведено' : 'Ожидается'}
-                    </span>
-                    <button type="button" class="btn btn-xs ${t.isPaid ? 'btn-emerald-soft' : 'btn-secondary'}" data-action="toggle-transfer" data-t-index="${t.index}">
-                      ${t.isPaid ? 'Оплачено' : 'Отметить оплату'}
-                    </button>
+                  <div class="mono-num" style="font-size: 14.5px; font-weight: 600; color: ${t.isPaid ? 'var(--emerald)' : 'var(--text-primary)'};">
+                    ${formatRubles(t.amountKop)}
                   </div>
                 </div>
-              `;
-            }).join('');
+                <div style="display: flex; align-items: center; justify-content: flex-start; margin-top: 8px;">
+                  ${statusBadgeHtml}
+                </div>
+              </div>
+            `;
+          }).join('');
+
+          allTransfersSectionHtml = `
+            <div class="section-row">
+              <span class="section-label">Остальные переводы события</span>
+              <span class="section-meta tabular">${otherTransfers.length} шт.</span>
+            </div>
+            ${otherCardsHtml}
+          `;
+        }
 
         const balancesTableHtml = `
           <div class="card" style="padding: 14px 16px;">
@@ -3002,11 +3067,7 @@
             </div>
           </div>
 
-          <div class="section-row">
-            <span class="section-label">Все переводы события</span>
-            <span class="section-meta tabular">${totalTr} шт.</span>
-          </div>
-          ${allTransfersHtml}
+          ${allTransfersSectionHtml}
           ${balancesTableHtml}
 
           <button type="button" class="btn btn-primary btn-block" data-action="copy-chat-report" style="margin-top: 4px;">
@@ -3652,13 +3713,19 @@
         });
       }
 
-      /* --- Toggle Paid Transfer --- */
+      /* --- Toggle Paid Transfer (ONLY for own outgoing transfers) --- */
       async function toggleTransferPaid(tIndex) {
         const ev = state.activeEvent;
         if (!ev) return;
+        const ctx = resolveEventContext(ev);
         const fin = computeEventFinances(ev);
         const tr = fin.transfers[tIndex];
         if (!tr) return;
+
+        if (!ctx.myParticipant || ctx.isInspectingOther || tr.fromId !== ctx.myParticipant.id) {
+          showToast('Отметить оплату может только сам отправитель');
+          return;
+        }
 
         try {
           if (tr.isPaid && tr.paidRow) {
@@ -3843,7 +3910,7 @@
           fin.transfers.forEach((t, i) => {
             const from = fin.participants.find(p => p.id === t.fromId);
             const to = fin.participants.find(p => p.id === t.toId);
-            const status = t.isPaid ? '[Переведено]' : '[Ожидается]';
+            const status = t.isPaid ? '[Оплачено]' : '[Ожидание оплаты]';
             const sbp = to && to.phone ? ` (${to.bank ? to.bank + ': ' : ''}${to.phone})` : '';
             lines.push(`${i + 1}. ${from.name} → ${to.name}: ${formatRubles(t.amountKop)}${sbp} ${status}`);
           });

@@ -19,24 +19,27 @@
        1. EDITORIAL FINTECH DESIGN TOKENS (LIGHT & DARK THEMES)
        ========================================================================== */
     :root {
-      --bg: #F4F5F7;
+      --bg: #F6F7F9;
       --surface: #FFFFFF;
       --surface-subtle: #F8FAFC;
       --surface-muted: #EEF1F5;
-      --border: rgba(15, 23, 42, 0.08);
-      --border-strong: rgba(15, 23, 42, 0.16);
+      --border: rgba(17, 24, 39, 0.08);
+      --border-strong: rgba(17, 24, 39, 0.16);
 
-      --text-primary: #0F172A;
+      --text-primary: #111827;
       --text-secondary: #64748B;
       --text-tertiary: #94A3B8;
 
-      --cta-bg: #0F172A;
-      --cta-bg-hover: #1E293B;
+      --cta-bg: #111827;
+      --cta-bg-hover: #1F2937;
       --cta-text: #FFFFFF;
 
-      --emerald: #059669;
+      --accent-blue: #0F62FE;
+      --accent-blue-soft: rgba(15, 98, 254, 0.09);
+
+      --emerald: #16A34A;
       --emerald-soft: #ECFDF5;
-      --emerald-border: rgba(5, 150, 105, 0.22);
+      --emerald-border: rgba(22, 163, 74, 0.24);
 
       --crimson: #DC2626;
       --crimson-soft: #FEF2F2;
@@ -44,11 +47,11 @@
 
       --amber: #D97706;
       --amber-soft: #FFFBEB;
-      --amber-border: rgba(217, 119, 6, 0.24);
+      --amber-border: rgba(217, 119, 6, 0.26);
 
-      --backdrop: rgba(15, 23, 42, 0.48);
-      --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
-      --shadow-sheet: 0 -12px 36px rgba(15, 23, 42, 0.14);
+      --backdrop: rgba(17, 24, 39, 0.48);
+      --shadow-xs: 0 1px 2px rgba(17, 24, 39, 0.04);
+      --shadow-sheet: 0 -12px 36px rgba(17, 24, 39, 0.14);
 
       --radius-sm: 8px;
       --radius-md: 12px;
@@ -58,10 +61,10 @@
     }
 
     [data-theme="dark"] {
-      --bg: #0B0D11;
-      --surface: #14171F;
-      --surface-subtle: #191D27;
-      --surface-muted: #202532;
+      --bg: #0D1117;
+      --surface: #161B22;
+      --surface-subtle: #1C2129;
+      --surface-muted: #242A35;
       --border: rgba(255, 255, 255, 0.08);
       --border-strong: rgba(255, 255, 255, 0.16);
 
@@ -71,11 +74,14 @@
 
       --cta-bg: #F8FAFC;
       --cta-bg-hover: #E2E8F0;
-      --cta-text: #0B0D11;
+      --cta-text: #0D1117;
 
-      --emerald: #10B981;
-      --emerald-soft: rgba(16, 185, 129, 0.12);
-      --emerald-border: rgba(16, 185, 129, 0.28);
+      --accent-blue: #3B82F6;
+      --accent-blue-soft: rgba(59, 130, 246, 0.14);
+
+      --emerald: #22C55E;
+      --emerald-soft: rgba(34, 197, 94, 0.12);
+      --emerald-border: rgba(34, 197, 94, 0.28);
 
       --crimson: #F87171;
       --crimson-soft: rgba(248, 113, 113, 0.12);
@@ -856,14 +862,52 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 8px;
       margin-bottom: 12px;
     }
 
     .settlement-title {
-      font-size: 15.5px;
+      font-size: 16px;
       font-weight: 700;
       letter-spacing: -0.015em;
     }
+
+    .personal-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .personal-metric-cell {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 10px;
+      min-width: 0;
+    }
+
+    .personal-metric-label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+
+    .personal-metric-val {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .personal-metric-val.pos { color: var(--emerald); }
+    .personal-metric-val.neg { color: var(--crimson); }
 
     .settlement-sub-group-title {
       font-size: 11.5px;
@@ -928,14 +972,34 @@
       flex-wrap: wrap;
     }
 
+    .sbp-left-meta {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .bank-pill {
+      display: inline-flex;
+      align-items: center;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: var(--accent-blue-soft);
+      color: var(--accent-blue);
+    }
+
+    .sbp-phone-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
     .sbp-info-text {
       font-size: 12.5px;
       color: var(--text-secondary);
-    }
-
-    .sbp-info-text strong {
-      color: var(--text-primary);
-      font-weight: 600;
     }
 
     .transfer-actions-row {
@@ -947,17 +1011,80 @@
       flex-wrap: wrap;
     }
 
-    .status-indicator {
+    /* Non-interactive Status Pills ("Ожидание оплаты" / "Оплачено") */
+    .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 5px;
       font-size: 12px;
       font-weight: 600;
-      color: var(--text-secondary);
+      padding: 4px 10px;
+      border-radius: 99px;
+      white-space: nowrap;
+      user-select: none;
     }
 
-    .status-indicator.done {
+    .status-pill.pending {
+      background: var(--amber-soft);
+      color: var(--amber);
+      border: 1px solid var(--amber-border);
+    }
+
+    .status-pill.paid {
+      background: var(--emerald-soft);
       color: var(--emerald);
+      border: 1px solid var(--emerald-border);
+    }
+
+    .text-cancel-btn {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .text-cancel-btn:hover {
+      color: var(--crimson);
+      background: var(--crimson-soft);
+    }
+
+    .other-transfer-card {
+      padding: 13px 15px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .other-transfer-card.settled {
+      border-color: var(--emerald-border);
+    }
+
+    .other-transfer-route {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-primary);
+      line-height: 1.35;
+    }
+
+    .other-transfer-amount {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-top: 3px;
+    }
+
+    .no-debt-box {
+      background: var(--emerald-soft);
+      border: 1px solid var(--emerald-border);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--emerald);
+      line-height: 1.45;
     }
 
     .progress-bar-wrap {
@@ -974,130 +1101,9 @@
       border-radius: 99px;
       transition: width 0.3s ease;
     }
-
-    /* ==========================================================================
-       9. TAB 3: "УЧАСТНИКИ"
-       ========================================================================== */
-    .participant-row-card {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-    }
-
-    .participant-main {
-      min-width: 0;
-      flex: 1;
-    }
-
-    .participant-title-line {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .participant-name {
-      font-size: 14.5px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .role-badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 5px;
-      background: var(--surface-muted);
-      color: var(--text-secondary);
-    }
-
-    .role-badge.org {
-      background: var(--cta-bg);
-      color: var(--cta-text);
-    }
-
-    .participant-sbp-sub {
-      font-size: 12.5px;
-      color: var(--text-secondary);
-      margin-top: 4px;
-    }
-
-    /* ==========================================================================
-       10. BOTTOM-SHEET MODALS & FORM CONTROLS
-       ========================================================================== */
-    .modal-backdrop {
-      position: absolute;
-      inset: 0;
-      background: var(--backdrop);
-      z-index: 50;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      animation: fadeIn 0.16s ease;
-    }
-
-    .modal-backdrop.open {
-      display: flex;
-    }
-
-    .modal-backdrop.centered {
-      align-items: center;
-      padding: 16px;
-    }
-
-    .sheet {
-      width: 100%;
-      max-height: 92dvh;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-radius: 20px 20px 0 0;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: var(--shadow-sheet);
-      animation: slideUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .dialog-box {
-      width: 100%;
-      max-width: 400px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: var(--shadow-sheet);
-    }
-
-    .sheet-grabber {
-      width: 36px;
-      height: 4px;
-      border-radius: 99px;
-      background: var(--border-strong);
-      margin: 10px auto 2px;
-      flex-shrink: 0;
-    }
-
-    .sheet-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-
-    .sheet-title {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.015em;
-    }
-
-    .sheet-body {
-      padding: 16px;
+    /* ... existing code ... -->
+```
+```html:ПОРОВНУ — Умное разделение счетов в Telegram:splittrip_tma.html
       overflow-y: auto;
       flex: 1;
     }
@@ -2370,7 +2376,7 @@
       }
 
       function getInviteUrl(eventId) {
-        return `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=ev_${eventId}`;
+        return `https://t.me/${BOT_USERNAME}/${APP_SHORT_NAME}?startapp=${eventId}`;
       }
 
       function shareInviteToTelegram(ev) {
@@ -2784,9 +2790,12 @@
           const includedCount = fin.participants.filter(p => Math.round(Number(splits[p.id] || 0) * 100) > 0).length;
           const viewedShareKop = vp ? Math.round(Number(splits[vp.id] || 0) * 100) : 0;
 
-          const badgeText = isCustom
-            ? 'Вручную'
-            : `Поровну · ${includedCount} чел.`;
+          let badgeText = `Поровну · ${includedCount} чел.`;
+          if (isCustom) {
+            badgeText = 'Вручную';
+          } else if (exp.split_mode === 'selective' || includedCount < fin.participants.length) {
+            badgeText = `Выборочно · ${includedCount} чел.`;
+          }
 
           return `
             <div class="card expense-item" data-action="open-edit-expense" data-expense-id="${esc(exp.id)}">
@@ -2819,140 +2828,232 @@
       /* ------------------------------------------------------------------------
          8D. TAB 2: "РАСЧЁТ" (SMART SETTLEMENT)
          ------------------------------------------------------------------------ */
-      function renderSettlementTab(ev, ctx, fin) {
-        const vp = ctx.viewedParticipant;
-        let personalCardHtml = '';
-
-        if (vp) {
-          const outgoing = fin.transfers.filter(t => t.fromId === vp.id);
-          const incoming = fin.transfers.filter(t => t.toId === vp.id);
-          const cardTitle = ctx.isInspectingOther ? `Расчёт: ${vp.name}` : 'Ваш расчёт';
-
-          let bodyHtml = '';
-          if (outgoing.length === 0 && incoming.length === 0) {
-            bodyHtml = `
-              <div style="font-size: 13.5px; color: var(--emerald); font-weight: 600;">
-                В расчёте — переводов не требуется
-              </div>
-            `;
-          } else {
-            if (outgoing.length > 0) {
-              bodyHtml += `<div class="settlement-sub-group-title">Кому перевести</div>`;
-              bodyHtml += outgoing.map(t => {
-                const recipient = fin.participants.find(p => p.id === t.toId);
-                if (!recipient) return '';
-                const hasSbp = Boolean(recipient.phone);
-                const sbpDisplay = recipient.bank
-                  ? `${esc(recipient.bank)} · <strong>${esc(recipient.phone)}</strong>`
-                  : `<strong>${esc(recipient.phone)}</strong>`;
-
-                return `
-                  <div class="transfer-row-box ${t.isPaid ? 'settled' : ''}">
-                    <div class="transfer-row-top">
-                      <span class="transfer-counterparty">Получатель: ${esc(recipient.name)}</span>
-                      <span class="transfer-amt mono-num">${formatRubles(t.amountKop)}</span>
-                    </div>
-
-                    ${hasSbp ? `
-                      <div class="sbp-strip">
-                        <span class="sbp-info-text">${sbpDisplay}</span>
-                        <button type="button" class="btn btn-secondary btn-xs" data-action="copy-sbp" data-phone="${esc(recipient.phone)}" data-bank="${esc(recipient.bank || 'СБП')}">
-                          Скопировать реквизиты
-                        </button>
-                      </div>
-                    ` : `
-                      <div class="sbp-strip">
-                        <span class="sbp-info-text">Реквизиты СБП не указаны</span>
-                        ${(ctx.isOrganizer || (ctx.myParticipant && ctx.myParticipant.id === recipient.id)) ? `
-                          <button type="button" class="btn btn-secondary btn-xs" data-action="open-edit-participant" data-pid="${esc(recipient.id)}">
-                            Указать
-                          </button>
-                        ` : ''}
-                      </div>
-                    `}
-
-                    <div class="transfer-actions-row">
-                      <span class="status-indicator ${t.isPaid ? 'done' : ''}">
-                        ${t.isPaid ? 'Переведено' : 'Ожидает перевода'}
-                      </span>
-                      <button type="button" class="btn btn-sm ${t.isPaid ? 'btn-emerald-soft' : 'btn-emerald'}" data-action="toggle-transfer" data-t-index="${t.index}">
-                        ${t.isPaid ? 'Переведено ✓' : 'Я перевёл'}
-                      </button>
-                    </div>
-                  </div>
-                `;
-              }).join('');
-            }
-
-            if (incoming.length > 0) {
-              bodyHtml += `<div class="settlement-sub-group-title">Кто переводит</div>`;
-              bodyHtml += incoming.map(t => {
-                const sender = fin.participants.find(p => p.id === t.fromId);
-                if (!sender) return '';
-                return `
-                  <div class="transfer-row-box ${t.isPaid ? 'settled' : ''}">
-                    <div class="transfer-row-top">
-                      <span class="transfer-counterparty">Отправитель: ${esc(sender.name)}</span>
-                      <span class="transfer-amt incoming mono-num">+${formatRubles(t.amountKop)}</span>
-                    </div>
-                    <div class="transfer-actions-row">
-                      <span class="status-indicator ${t.isPaid ? 'done' : ''}">
-                        ${t.isPaid ? 'Переведено' : 'Ожидается'}
-                      </span>
-                      <button type="button" class="btn btn-sm ${t.isPaid ? 'btn-secondary' : 'btn-emerald-soft'}" data-action="toggle-transfer" data-t-index="${t.index}">
-                        ${t.isPaid ? 'Отменить отметку' : 'Подтвердить получение'}
-                      </button>
-                    </div>
-                  </div>
-                `;
-              }).join('');
-            }
-          }
-
-          personalCardHtml = `
-            <div class="card settlement-hero-card">
-              <div class="settlement-header">
-                <span class="settlement-title">${esc(cardTitle)}</span>
-              </div>
-              ${bodyHtml}
-            </div>
+      function renderStatusPill(isPaid) {
+        if (isPaid) {
+          return `
+            <span class="status-pill paid">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Оплачено
+            </span>
           `;
         }
+        return `
+          <span class="status-pill pending">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 15"/></svg>
+            Ожидание оплаты
+          </span>
+        `;
+      }
+
+      function renderSettlementTab(ev, ctx, fin) {
+        const vp = ctx.viewedParticipant;
+        const isViewingOwnProfile = Boolean(ctx.myParticipant && vp && ctx.myParticipant.id === vp.id);
 
         const totalTr = fin.transfers.length;
         const pct = totalTr > 0
           ? Math.round((fin.paidCount / totalTr) * 100)
           : (fin.totalBudgetKop > 0 ? 100 : 0);
 
-        const allTransfersHtml = totalTr === 0
+        // Top Progress Summary Card
+        const progressCardHtml = `
+          <div class="card">
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600;">
+              <span>Закрыто ${fin.paidCount} из ${totalTr} переводов</span>
+              <span class="mono-num" style="color: ${fin.isClosed ? 'var(--emerald)' : 'var(--text-secondary)'};">${pct}%</span>
+            </div>
+            <div class="progress-bar-wrap">
+              <div class="progress-bar-fill" style="width: ${pct}%;"></div>
+            </div>
+            <div class="tabular" style="font-size: 12px; color: var(--text-secondary);">
+              Оплачено ${formatRubles(fin.paidTransferKop)} из ${formatRubles(fin.totalTransferKop)}
+            </div>
+          </div>
+        `;
+
+        // Section 1 (Top): Personal Calculation for activeParticipant
+        let personalCardHtml = '';
+        if (vp) {
+          const entry = fin.ledger[vp.id] || { paidKop: 0, shareKop: 0, netKop: 0 };
+          const outgoing = fin.transfers.filter(t => t.fromId === vp.id);
+          const incoming = fin.transfers.filter(t => t.toId === vp.id);
+
+          const sectionTitle = isViewingOwnProfile
+            ? `Ваш расчёт · ${vp.name}`
+            : `Расчёт для ${vp.name}`;
+
+          let netLabel = 'Баланс';
+          let netClass = '';
+          let netValueStr = '0 ₽';
+          if (entry.netKop > 0) {
+            netLabel = 'В плюсе';
+            netClass = 'pos';
+            netValueStr = `+${formatRubles(entry.netKop)}`;
+          } else if (entry.netKop < 0) {
+            netLabel = 'К переводу';
+            netClass = 'neg';
+            netValueStr = formatRubles(Math.abs(entry.netKop));
+          }
+
+          const metricsHtml = `
+            <div class="personal-metrics-grid">
+              <div class="personal-metric-cell">
+                <div class="personal-metric-label">Потратил</div>
+                <div class="personal-metric-val mono-num">${formatRubles(entry.paidKop)}</div>
+              </div>
+              <div class="personal-metric-cell">
+                <div class="personal-metric-label">Доля в расходах</div>
+                <div class="personal-metric-val mono-num">${formatRubles(entry.shareKop)}</div>
+              </div>
+              <div class="personal-metric-cell">
+                <div class="personal-metric-label">${netLabel}</div>
+                <div class="personal-metric-val mono-num ${netClass}">${netValueStr}</div>
+              </div>
+            </div>
+          `;
+
+          let outgoingHtml = '';
+          if (outgoing.length === 0) {
+            let emptyMsg = isViewingOwnProfile
+              ? 'Вам ничего переводить не нужно'
+              : `${esc(vp.name)} ничего переводить не нужно`;
+
+            if (entry.netKop > 0) {
+              emptyMsg += isViewingOwnProfile
+                ? ` — вам должны <span class="mono-num">${formatRubles(entry.netKop)}</span>`
+                : ` — должны <span class="mono-num">${formatRubles(entry.netKop)}</span>`;
+            }
+
+            outgoingHtml = `<div class="no-debt-box">${emptyMsg}</div>`;
+          } else {
+            outgoingHtml += `<div class="settlement-sub-group-title">Кому перевести</div>`;
+            outgoingHtml += outgoing.map(t => {
+              const recipient = fin.participants.find(p => p.id === t.toId);
+              if (!recipient) return '';
+              const hasSbp = Boolean(recipient.phone);
+
+              // Strict permission control: ONLY the actual sender viewing their own profile sees action buttons
+              let actionAreaHtml = '';
+              if (isViewingOwnProfile) {
+                if (t.isPaid) {
+                  actionAreaHtml = `
+                    <div class="transfer-actions-row">
+                      <span class="status-pill paid">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        Оплачено ✓
+                      </span>
+                      <button type="button" class="text-cancel-btn" data-action="toggle-transfer" data-t-index="${t.index}">
+                        Отменить
+                      </button>
+                    </div>
+                  `;
+                } else {
+                  actionAreaHtml = `
+                    <div class="transfer-actions-row" style="justify-content: flex-end;">
+                      <button type="button" class="btn btn-sm btn-emerald" data-action="toggle-transfer" data-t-index="${t.index}">
+                        Я перевёл
+                      </button>
+                    </div>
+                  `;
+                }
+              } else {
+                // Organizer inspecting another participant: strictly read-only status pill
+                actionAreaHtml = `
+                  <div class="transfer-actions-row" style="justify-content: flex-end;">
+                    ${renderStatusPill(t.isPaid)}
+                  </div>
+                `;
+              }
+
+              return `
+                <div class="transfer-row-box ${t.isPaid ? 'settled' : ''}">
+                  <div class="transfer-row-top">
+                    <span class="transfer-counterparty">Получатель: ${esc(recipient.name)}</span>
+                    <span class="transfer-amt mono-num">${formatRubles(t.amountKop)}</span>
+                  </div>
+
+                  ${hasSbp ? `
+                    <div class="sbp-strip">
+                      <div class="sbp-left-meta">
+                        ${recipient.bank ? `<span class="bank-pill">${esc(recipient.bank)}</span>` : ''}
+                        <span class="sbp-phone-text mono-num">${esc(recipient.phone)}</span>
+                      </div>
+                      <button type="button" class="btn btn-secondary btn-xs" data-action="copy-sbp" data-phone="${esc(recipient.phone)}" data-bank="${esc(recipient.bank || 'СБП')}">
+                        Скопировать
+                      </button>
+                    </div>
+                  ` : `
+                    <div class="sbp-strip">
+                      <span class="sbp-info-text">Реквизиты СБП не указаны</span>
+                      ${(ctx.isOrganizer || (ctx.myParticipant && ctx.myParticipant.id === recipient.id)) ? `
+                        <button type="button" class="btn btn-secondary btn-xs" data-action="open-edit-participant" data-pid="${esc(recipient.id)}">
+                          Указать
+                        </button>
+                      ` : ''}
+                    </div>
+                  `}
+
+                  ${actionAreaHtml}
+                </div>
+              `;
+            }).join('');
+          }
+
+          let incomingHtml = '';
+          if (incoming.length > 0) {
+            incomingHtml += `<div class="settlement-sub-group-title">Ожидаемые поступления</div>`;
+            incomingHtml += incoming.map(t => {
+              const sender = fin.participants.find(p => p.id === t.fromId);
+              if (!sender) return '';
+              return `
+                <div class="transfer-row-box ${t.isPaid ? 'settled' : ''}" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                  <div>
+                    <div class="transfer-counterparty">От: ${esc(sender.name)}</div>
+                    <div class="transfer-amt incoming mono-num" style="margin-top: 2px;">+${formatRubles(t.amountKop)}</div>
+                  </div>
+                  ${renderStatusPill(t.isPaid)}
+                </div>
+              `;
+            }).join('');
+          }
+
+          personalCardHtml = `
+            <div class="card settlement-hero-card">
+              <div class="settlement-header">
+                <span class="settlement-title">${esc(sectionTitle)}</span>
+              </div>
+              ${metricsHtml}
+              ${outgoingHtml}
+              ${incomingHtml}
+            </div>
+          `;
+        }
+
+        // Section 2 (Bottom): "Все переводы события" — strictly OTHER participants' transfers (NO duplication, NO buttons)
+        const otherTransfers = vp
+          ? fin.transfers.filter(t => t.fromId !== vp.id)
+          : fin.transfers;
+
+        const otherTransfersHtml = otherTransfers.length === 0
           ? `
-            <div class="card empty-box">
-              <div class="empty-box-title">Все участники в расчёте</div>
-              <p class="empty-box-desc">Взаимных долгов по текущим расходам нет.</p>
+            <div class="card empty-box" style="padding: 24px 16px;">
+              <p class="empty-box-desc">Других переводов в событии нет</p>
             </div>
           `
-          : fin.transfers.map(t => {
+          : otherTransfers.map(t => {
               const from = fin.participants.find(p => p.id === t.fromId);
               const to = fin.participants.find(p => p.id === t.toId);
               if (!from || !to) return '';
               return `
-                <div class="card" style="padding: 13px 16px; ${t.isPaid ? 'border-color: var(--emerald-border);' : ''}">
-                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="font-size: 13.5px; font-weight: 600; color: var(--text-primary);">
+                <div class="card other-transfer-card ${t.isPaid ? 'settled' : ''}">
+                  <div style="min-width: 0; flex: 1;">
+                    <div class="other-transfer-route">
                       ${esc(from.name)} <span style="color: var(--text-tertiary);">→</span> ${esc(to.name)}
                     </div>
-                    <div class="mono-num" style="font-size: 14.5px; font-weight: 600; color: ${t.isPaid ? 'var(--emerald)' : 'var(--text-primary)'};">
+                    <div class="other-transfer-amount mono-num">
                       ${formatRubles(t.amountKop)}
                     </div>
                   </div>
-                  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
-                    <span class="status-indicator ${t.isPaid ? 'done' : ''}">
-                      ${t.isPaid ? 'Переведено' : 'Ожидается'}
-                    </span>
-                    <button type="button" class="btn btn-xs ${t.isPaid ? 'btn-emerald-soft' : 'btn-secondary'}" data-action="toggle-transfer" data-t-index="${t.index}">
-                      ${t.isPaid ? 'Оплачено' : 'Отметить оплату'}
-                    </button>
-                  </div>
+                  ${renderStatusPill(t.isPaid)}
                 </div>
               `;
             }).join('');
@@ -2988,25 +3089,12 @@
           </div>
         `;
 
-        return personalCardHtml + `
-          <div class="card">
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 600;">
-              <span>Закрыто ${fin.paidCount} из ${totalTr} переводов</span>
-              <span class="mono-num" style="color: ${fin.isClosed ? 'var(--emerald)' : 'var(--text-secondary)'};">${pct}%</span>
-            </div>
-            <div class="progress-bar-wrap">
-              <div class="progress-bar-fill" style="width: ${pct}%;"></div>
-            </div>
-            <div class="tabular" style="font-size: 12px; color: var(--text-secondary);">
-              Оплачено ${formatRubles(fin.paidTransferKop)} из ${formatRubles(fin.totalTransferKop)}
-            </div>
-          </div>
-
+        return progressCardHtml + personalCardHtml + `
           <div class="section-row">
             <span class="section-label">Все переводы события</span>
-            <span class="section-meta tabular">${totalTr} шт.</span>
+            <span class="section-meta tabular">${otherTransfers.length} шт.</span>
           </div>
-          ${allTransfersHtml}
+          ${otherTransfersHtml}
           ${balancesTableHtml}
 
           <button type="button" class="btn btn-primary btn-block" data-action="copy-chat-report" style="margin-top: 4px;">
@@ -3579,13 +3667,16 @@
         }
 
         let splits = {};
+        let resolvedSplitMode = modalSplitMode;
         if (modalSplitMode === 'equal') {
           const selected = getCheckedEqualIds();
           if (!selected.length) return;
           splits = buildEqualSplits(totalKop, selected);
+          resolvedSplitMode = selected.length < ev.participants.length ? 'selective' : 'equal';
         } else {
           const { map, sumKop, invalid } = getCustomSplitsData();
           if (invalid || sumKop !== totalKop) return;
+          resolvedSplitMode = 'manual';
           Object.entries(map).forEach(([pid, kop]) => {
             splits[pid] = Number((kop / 100).toFixed(2));
           });
@@ -3601,7 +3692,7 @@
             title,
             amount: Number((totalKop / 100).toFixed(2)),
             paid_by: paidBy,
-            split_mode: modalSplitMode,
+            split_mode: resolvedSplitMode,
             splits
           };
 
@@ -3645,20 +3736,20 @@
               showToast('Трата удалена');
               await openEventById(ev.id, true, false);
             } catch (err) {
-              console.error(err);
-              showToast('Не удалось удалить трату');
-            }
-          }
-        });
-      }
-
-      /* --- Toggle Paid Transfer --- */
+      /* --- Toggle Paid Transfer (Strictly Sender-Only) --- */
       async function toggleTransferPaid(tIndex) {
         const ev = state.activeEvent;
         if (!ev) return;
+        const ctx = resolveEventContext(ev);
         const fin = computeEventFinances(ev);
         const tr = fin.transfers[tIndex];
         if (!tr) return;
+
+        // Enforce strict permission: only the sender themselves can mark/unmark their transfer
+        if (!ctx.myParticipant || tr.fromId !== ctx.myParticipant.id) {
+          showToast('Отметить оплату может только отправитель перевода');
+          return;
+        }
 
         try {
           if (tr.isPaid && tr.paidRow) {

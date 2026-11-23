@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>ПОРОВНУ — Разделение общих расходов</title>
+  <link rel="icon" type="image/jpeg" href="./logo.jpg" />
 
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -37,6 +38,8 @@
       --emerald: #059669;
       --emerald-soft: #ECFDF5;
       --emerald-border: rgba(5, 150, 105, 0.22);
+
+      --gold: #D4AF37;
 
       --crimson: #DC2626;
       --crimson-soft: #FEF2F2;
@@ -161,43 +164,62 @@
     }
 
     /* ==========================================================================
-       3. TOP NAVIGATION BAR & BRAND MARK
+       3. TOP NAVIGATION BAR & 3D BRAND MARK
        ========================================================================== */
     .topbar {
       flex-shrink: 0;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      padding: 12px 16px;
+      padding: 11px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
       z-index: 20;
     }
 
     .brand-group {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 9px;
       min-width: 0;
     }
 
     .brand-mark {
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      background: var(--cta-bg);
-      color: var(--cta-text);
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(145deg, #0D3B2B 0%, #062118 100%);
+      border: 1px solid rgba(212, 175, 55, 0.42);
+      box-shadow: 0 2px 6px rgba(6, 33, 24, 0.22);
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
     }
 
+    .brand-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transform: scale(1.14);
+    }
+
+    .brand-logo-fallback {
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #E5C158;
+    }
+
     .brand-title-wrap {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
     }
 
     .brand-wordmark {
@@ -225,23 +247,23 @@
     .topbar-right {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-shrink: 0;
     }
 
     .user-chip {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       height: 32px;
-      padding: 0 10px;
+      padding: 0 9px;
       border-radius: 8px;
       background: var(--surface-subtle);
       border: 1px solid var(--border);
-      font-size: 12.5px;
+      font-size: 12px;
       font-weight: 500;
       color: var(--text-primary);
-      max-width: 165px;
+      max-width: 128px;
       transition: border-color 0.15s;
     }
 
@@ -266,6 +288,7 @@
       justify-content: center;
       color: var(--text-secondary);
       transition: border-color 0.15s, color 0.15s, background 0.15s;
+      flex-shrink: 0;
     }
 
     .icon-btn:hover {
@@ -488,11 +511,12 @@
       font-size: 22px;
       font-weight: 700;
       letter-spacing: -0.025em;
-      margin: 0 0 4px;
+      margin: 0 0 5px;
     }
 
     .home-subtitle {
       font-size: 13px;
+      line-height: 1.42;
       color: var(--text-secondary);
       margin: 0;
     }
@@ -718,7 +742,6 @@
       color: var(--cta-text);
     }
 
-    /* Banner when Organizer is inspecting another participant */
     .inspecting-banner {
       display: flex;
       align-items: center;
@@ -945,19 +968,6 @@
       justify-content: space-between;
       gap: 8px;
       flex-wrap: wrap;
-    }
-
-    .status-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-
-    .status-indicator.done {
-      color: var(--emerald);
     }
 
     .status-badge {
@@ -1346,7 +1356,257 @@
     }
 
     /* ==========================================================================
-       11. TOASTS, EMPTY STATES & ANIMATIONS
+       11. STORIES ONBOARDING TUTORIAL OVERLAY
+       ========================================================================== */
+    .stories-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 90;
+      background: radial-gradient(circle at 50% 0%, #10382B 0%, #090D10 60%, #06080A 100%);
+      color: #F8FAFC;
+      display: none;
+      flex-direction: column;
+      padding: calc(12px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));
+      user-select: none;
+      animation: fadeIn 0.18s ease;
+    }
+
+    .stories-overlay.open {
+      display: flex;
+    }
+
+    .stories-progress {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+      flex-shrink: 0;
+    }
+
+    .story-bar-track {
+      height: 3px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.18);
+      overflow: hidden;
+    }
+
+    .story-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #D4AF37 0%, #F3D97E 100%);
+      border-radius: 99px;
+      transition: width 0.25s ease;
+    }
+
+    .story-bar-track.done .story-bar-fill,
+    .story-bar-track.active .story-bar-fill {
+      width: 100%;
+    }
+
+    .story-bar-track.done .story-bar-fill {
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .stories-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-shrink: 0;
+      z-index: 5;
+    }
+
+    .stories-brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .stories-brand-badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(212, 175, 55, 0.45);
+      background: #0B2E22;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stories-brand-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stories-brand-name {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: #F8FAFC;
+    }
+
+    .stories-brand-step {
+      font-size: 11.5px;
+      color: rgba(248, 250, 252, 0.58);
+    }
+
+    .stories-close-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #F8FAFC;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .stories-close-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    .stories-stage {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 8px 0 16px;
+      cursor: pointer;
+    }
+
+    .story-visual-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 24px;
+      backdrop-filter: blur(8px);
+      animation: storyPop 0.24s ease;
+    }
+
+    .story-mock-row {
+      background: rgba(15, 23, 42, 0.62);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .story-mock-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 9px;
+      border-radius: 7px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .story-mock-pill.gold {
+      background: rgba(212, 175, 55, 0.16);
+      border: 1px solid rgba(212, 175, 55, 0.36);
+      color: #F3D97E;
+    }
+
+    .story-mock-pill.emerald {
+      background: rgba(16, 185, 129, 0.16);
+      border: 1px solid rgba(16, 185, 129, 0.36);
+      color: #34D399;
+    }
+
+    .story-mock-pill.amber {
+      background: rgba(251, 191, 36, 0.14);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      color: #FBBF24;
+    }
+
+    .story-step-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #E5C158;
+      margin-bottom: 8px;
+    }
+
+    .story-heading {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin: 0 0 10px;
+      color: #FFFFFF;
+    }
+
+    .story-desc {
+      font-size: 14.5px;
+      line-height: 1.5;
+      color: rgba(248, 250, 252, 0.76);
+      margin: 0;
+    }
+
+    .story-tap-hint {
+      text-align: center;
+      font-size: 11.5px;
+      color: rgba(248, 250, 252, 0.42);
+      margin-bottom: 10px;
+      flex-shrink: 0;
+    }
+
+    .stories-footer {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      z-index: 5;
+    }
+
+    .story-btn-prev {
+      width: 48px;
+      height: 46px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.09);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #F8FAFC;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .story-btn-prev:disabled {
+      opacity: 0.28;
+      cursor: not-allowed;
+    }
+
+    .story-btn-next {
+      flex: 1;
+      height: 46px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+      color: #FFFFFF;
+      font-size: 14.5px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 6px 20px rgba(5, 150, 105, 0.32);
+    }
+
+    /* ==========================================================================
+       12. TOASTS, EMPTY STATES & ANIMATIONS
        ========================================================================== */
     .toast-host {
       position: absolute;
@@ -1417,6 +1677,7 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
     @keyframes toastSlide { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes storyPop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body>
@@ -1434,6 +1695,52 @@
 
       <!-- Bottom CTA Dock (Home Screen) -->
       <div class="bottom-dock" id="bottomDock" style="display: none;"></div>
+
+      <!-- ====================================================================
+           INTERACTIVE STORIES ONBOARDING TUTORIAL
+           ==================================================================== -->
+      <div class="stories-overlay" id="storiesOverlay" role="dialog" aria-modal="true" aria-label="Как пользоваться сервисом ПОРОВНУ">
+        <div class="stories-progress" id="storiesProgress">
+          <div class="story-bar-track"><div class="story-bar-fill"></div></div>
+          <div class="story-bar-track"><div class="story-bar-fill"></div></div>
+          <div class="story-bar-track"><div class="story-bar-fill"></div></div>
+          <div class="story-bar-track"><div class="story-bar-fill"></div></div>
+        </div>
+
+        <div class="stories-top">
+          <div class="stories-brand">
+            <div class="stories-brand-badge">
+              <img src="./logo.jpg" alt="ПОРОВНУ" class="brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+              <span class="brand-logo-fallback">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <line x1="6" y1="18" x2="18" y2="6"/>
+                  <circle cx="8" cy="8" r="2.2" fill="currentColor" stroke="none"/>
+                  <circle cx="16" cy="16" r="2.2" fill="currentColor" stroke="none"/>
+                </svg>
+              </span>
+            </div>
+            <div class="stories-brand-meta">
+              <span class="stories-brand-name">ПОРОВНУ</span>
+              <span class="stories-brand-step" id="storyStepCounter">Шаг 1 из 4</span>
+            </div>
+          </div>
+
+          <button type="button" class="stories-close-btn" id="closeStoriesBtn" aria-label="Закрыть обучение">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <div class="stories-stage" id="storiesStage"></div>
+
+        <div class="story-tap-hint">Нажмите справа, чтобы листать дальше, или крестик, чтобы закрыть</div>
+
+        <div class="stories-footer">
+          <button type="button" class="story-btn-prev" id="storyPrevBtn" aria-label="Назад">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button type="button" class="story-btn-next" id="storyNextBtn">Далее</button>
+        </div>
+      </div>
 
       <!-- ====================================================================
            MODAL 1: CREATE NEW EVENT
@@ -1706,7 +2013,7 @@
       </div>
 
       <!-- ====================================================================
-           MODAL 6: CUSTOM CONFIRMATION DIALOG (ZERO NATIVE ALERT/CONFIRM)
+           MODAL 6: CUSTOM CONFIRMATION DIALOG
            ==================================================================== -->
       <div class="modal-backdrop centered" id="confirmDialogModal">
         <div class="dialog-box" role="dialog" aria-modal="true">
@@ -1749,12 +2056,12 @@
       const LS_DEMO_USER = 'porovnu_demo_user';
       const LS_EVENT_IDS = 'porovnu_my_event_ids';
       const LS_THEME = 'porovnu_theme_pref';
+      const LS_TUTORIAL_SEEN = 'porovnu_tutorial_seen_v1';
 
       const STANDARD_BANKS = [
         'Т-Банк', 'Сбербанк', 'Альфа-Банк', 'ВТБ', 'Озон Банк', 'Райффайзен'
       ];
 
-      // Minimalist geometric SVG category icons mapped to stored DB emoji keys
       const CATEGORY_ICONS = [
         {
           key: '🌲',
@@ -1798,6 +2105,92 @@
         }
       ];
 
+      // 4 onboarding tutorial slides
+      const TUTORIAL_SLIDES = [
+        {
+          tag: '01 · Старт',
+          title: 'Создайте событие',
+          desc: 'Нажмите «+ Новое событие», укажите название, дату и свой номер СБП, чтобы участники сразу видели, куда переводить деньги.',
+          visual: `
+            <div class="story-visual-card">
+              <div class="story-mock-row" style="margin-bottom: 10px;">
+                <div>
+                  <div style="font-size: 14.5px; font-weight: 700; color: #FFFFFF;">Поездка за город</div>
+                  <div style="font-size: 12px; color: rgba(248,250,252,0.6); margin-top: 3px;">28.11.2026 · 4 участника</div>
+                </div>
+                <span class="story-mock-pill gold">Организатор</span>
+              </div>
+              <div class="story-mock-row">
+                <span style="font-size: 12.5px; color: rgba(248,250,252,0.72);">Реквизиты СБП</span>
+                <span class="mono-num" style="font-size: 12.5px; font-weight: 600; color: #34D399;">Т-Банк · +7 999 ...</span>
+              </div>
+            </div>
+          `
+        },
+        {
+          tag: '02 · Команда',
+          title: 'Пригласите участников',
+          desc: 'Откройте вкладку «Участники» и отправьте ссылку в чат Telegram — друзья автоматически подключатся к событию. При желании их можно добавить вручную.',
+          visual: `
+            <div class="story-visual-card">
+              <div class="story-mock-row" style="margin-bottom: 10px;">
+                <span style="font-size: 13px; color: rgba(248,250,252,0.85);">Участники: <strong style="color:#fff;">Вы, Ваня, Дима, Оля</strong></span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="background: #10B981; color: #fff; text-align: center; padding: 9px; border-radius: 10px; font-size: 12.5px; font-weight: 600;">Поделиться в Telegram</div>
+                <div style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14); color: #fff; text-align: center; padding: 9px; border-radius: 10px; font-size: 12.5px; font-weight: 600;">Скопировать ссылку</div>
+              </div>
+            </div>
+          `
+        },
+        {
+          tag: '03 · Чеки',
+          title: 'Добавляйте общие траты',
+          desc: 'Записывайте все покупки во вкладке «Траты» и указывайте, кто оплатил чек. Сумму можно разделить поровну на всех, на выбранных людей или задать вручную.',
+          visual: `
+            <div class="story-visual-card">
+              <div class="story-mock-row" style="margin-bottom: 8px;">
+                <div>
+                  <div style="font-size: 14px; font-weight: 600; color: #fff;">Аренда дома</div>
+                  <div style="font-size: 12px; color: rgba(248,250,252,0.6); margin-top: 2px;">Оплатил: Камиль · Поровну</div>
+                </div>
+                <div style="text-align: right;">
+                  <div class="mono-num" style="font-size: 14.5px; font-weight: 700; color: #fff;">12 000 ₽</div>
+                  <div class="mono-num" style="font-size: 11.5px; color: #34D399;">Доля: 3 000 ₽</div>
+                </div>
+              </div>
+              <div class="story-mock-row">
+                <div>
+                  <div style="font-size: 14px; font-weight: 600; color: #fff;">Продукты и мясо</div>
+                  <div style="font-size: 12px; color: rgba(248,250,252,0.6); margin-top: 2px;">Оплатил: Ваня · Вручную</div>
+                </div>
+                <div class="mono-num" style="font-size: 14.5px; font-weight: 700; color: #fff;">4 500 ₽</div>
+              </div>
+            </div>
+          `
+        },
+        {
+          tag: '04 · Расчёт по СБП',
+          title: 'Минимум переводов',
+          desc: 'Во вкладке «Расчёт» сервис сам сведёт все долги в минимум переводов. Скопируйте номер СБП, переведите деньги и нажмите «Я перевёл» — статус обновится у всех в реальном времени.',
+          visual: `
+            <div class="story-visual-card">
+              <div class="story-mock-row" style="flex-direction: column; align-items: stretch; gap: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 13.5px; font-weight: 600; color: #fff;">Получатель: Камиль</span>
+                  <span class="mono-num" style="font-size: 15px; font-weight: 700; color: #F87171;">2 000 ₽</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08);">
+                  <span class="story-mock-pill amber">Ожидание оплаты</span>
+                  <span style="color: rgba(255,255,255,0.45); font-size: 13px;">→</span>
+                  <span class="story-mock-pill emerald">Оплачено ✓</span>
+                </div>
+              </div>
+            </div>
+          `
+        }
+      ];
+
       if (tg) {
         try {
           tg.ready();
@@ -1807,7 +2200,6 @@
         }
       }
 
-      // Apply desktop frame class only when opened outside Telegram WebApp
       const isInsideTelegram = Boolean(tg && tg.initData && tg.initData.length > 0);
       if (!isInsideTelegram) {
         document.getElementById('appShell').classList.add('desktop-frame');
@@ -1828,7 +2220,6 @@
           };
         }
 
-        // Browser fallback user
         try {
           const raw = localStorage.getItem(LS_DEMO_USER);
           if (raw) {
@@ -1913,7 +2304,7 @@
       }
 
       /* ------------------------------------------------------------------------
-         3. APPLICATION STATE
+         3. APPLICATION STATE & STORIES CONTROLLER
          ------------------------------------------------------------------------ */
       const state = {
         theme: resolveInitialTheme(),
@@ -1927,15 +2318,70 @@
         activeEvent: null,
         eventTab: 'expenses',   // 'expenses' | 'settlement' | 'participants'
         viewingParticipantId: null,
-        balancesOpen: false
+        balancesOpen: false,
+        storyIndex: 0,
+        storyOpen: false
       };
 
-      // Modal form transient states
       let createIconKey = '🌲';
       let createFriendsList = [];
       let editIconKey = '🌲';
-      let modalSplitMode = 'equal'; // 'equal' | 'custom'
+      let modalSplitMode = 'equal';
       let realtimeTimer = null;
+
+      function openTutorialStories(startIndex = 0) {
+        state.storyIndex = startIndex;
+        state.storyOpen = true;
+        document.getElementById('storiesOverlay').classList.add('open');
+        renderStorySlide();
+      }
+
+      function closeTutorialStories() {
+        state.storyOpen = false;
+        document.getElementById('storiesOverlay').classList.remove('open');
+        try {
+          localStorage.setItem(LS_TUTORIAL_SEEN, '1');
+        } catch (e) {}
+      }
+
+      function renderStorySlide() {
+        const idx = state.storyIndex;
+        const total = TUTORIAL_SLIDES.length;
+        const slide = TUTORIAL_SLIDES[idx];
+
+        const tracks = document.querySelectorAll('#storiesProgress .story-bar-track');
+        tracks.forEach((tr, i) => {
+          tr.classList.toggle('done', i < idx);
+          tr.classList.toggle('active', i === idx);
+        });
+
+        document.getElementById('storyStepCounter').textContent = `Шаг ${idx + 1} из ${total}`;
+        document.getElementById('storiesStage').innerHTML = `
+          ${slide.visual}
+          <div class="story-step-tag">${slide.tag}</div>
+          <h2 class="story-heading">${slide.title}</h2>
+          <p class="story-desc">${slide.desc}</p>
+        `;
+
+        document.getElementById('storyPrevBtn').disabled = idx === 0;
+        document.getElementById('storyNextBtn').textContent = idx === total - 1 ? 'Понятно, начать' : 'Далее';
+      }
+
+      function nextStorySlide() {
+        if (state.storyIndex < TUTORIAL_SLIDES.length - 1) {
+          state.storyIndex++;
+          renderStorySlide();
+        } else {
+          closeTutorialStories();
+        }
+      }
+
+      function prevStorySlide() {
+        if (state.storyIndex > 0) {
+          state.storyIndex--;
+          renderStorySlide();
+        }
+      }
 
       /* ------------------------------------------------------------------------
          4. INTEGER-KOPEK FINANCIAL ENGINE & GREEDY DEBT MINIMIZATION
@@ -2036,7 +2482,6 @@
 
         const rawTransfers = [];
 
-        // Step 1: Exact 1-to-1 settlement matches
         for (let i = 0; i < debtors.length; i++) {
           if (debtors[i].amount === 0) continue;
           const matchIdx = creditors.findIndex(c => c.amount === debtors[i].amount);
@@ -2052,7 +2497,6 @@
           }
         }
 
-        // Step 2: Greedy pairing (largest debtor -> largest creditor)
         while (true) {
           debtors.sort((a, b) => b.amount - a.amount);
           creditors.sort((a, b) => b.amount - a.amount);
@@ -2242,7 +2686,6 @@
           let participants = partRes.data || [];
           const currentTgId = state.user.id;
 
-          // Auto-claim matching unlinked slot or auto-join event
           if (autoJoin && currentTgId) {
             const alreadyLinked = participants.some(
               p => p.tg_user_id !== null && String(p.tg_user_id) === String(currentTgId)
@@ -2311,7 +2754,6 @@
           state.activeEvent = fullEvent;
           state.screen = 'event';
 
-          // Set default viewingParticipantId to current user's participant record
           const me = participants.find(p => p.tg_user_id !== null && String(p.tg_user_id) === String(currentTgId));
           if (!silent || !state.viewingParticipantId || !participants.some(p => p.id === state.viewingParticipantId)) {
             state.viewingParticipantId = me ? me.id : (participants[0] ? participants[0].id : null);
@@ -2500,6 +2942,10 @@
           : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
       }
 
+      function renderHelpIconSvg() {
+        return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+      }
+
       /* ------------------------------------------------------------------------
          8A. HOME SCREEN ("МОИ СОБЫТИЯ")
          ------------------------------------------------------------------------ */
@@ -2507,11 +2953,14 @@
         return `
           <div class="brand-group">
             <div class="brand-mark" aria-hidden="true">
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                <line x1="5" y1="12" x2="19" y2="12"/>
-                <circle cx="12" cy="6.5" r="2" fill="currentColor" stroke="none"/>
-                <circle cx="12" cy="17.5" r="2" fill="currentColor" stroke="none"/>
-              </svg>
+              <img src="./logo.jpg" alt="ПОРОВНУ" class="brand-logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+              <span class="brand-logo-fallback">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                  <line x1="6" y1="18" x2="18" y2="6"/>
+                  <circle cx="8" cy="8" r="2.2" fill="currentColor" stroke="none"/>
+                  <circle cx="16" cy="16" r="2.2" fill="currentColor" stroke="none"/>
+                </svg>
+              </span>
             </div>
             <div class="brand-title-wrap">
               <span class="brand-wordmark">ПОРОВНУ</span>
@@ -2525,6 +2974,9 @@
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
               </svg>
               <span class="user-chip-text">${esc(state.user.fullName)}</span>
+            </button>
+            <button type="button" class="icon-btn" data-action="open-tutorial" title="Как пользоваться" aria-label="Как пользоваться">
+              ${renderHelpIconSvg()}
             </button>
             <button type="button" class="icon-btn" data-action="toggle-theme" aria-label="Сменить тему">
               ${renderThemeIconSvg()}
@@ -2551,7 +3003,7 @@
         const headerHtml = `
           <div class="home-header-block">
             <h1 class="home-title">Мои события</h1>
-            <p class="home-subtitle">Совместные поездки, ужины и общие бюджеты</p>
+            <p class="home-subtitle">Сервис поможет вам поделить общие траты и сведёт долги в минимум переводов по СБП</p>
           </div>
 
           <div class="segmented cols-3" style="margin-bottom: 14px;" role="tablist">
@@ -2655,6 +3107,9 @@
                 </svg>
               </button>
             ` : ''}
+            <button type="button" class="icon-btn" data-action="open-tutorial" title="Как пользоваться" aria-label="Как пользоваться">
+              ${renderHelpIconSvg()}
+            </button>
             <button type="button" class="icon-btn" data-action="toggle-theme" aria-label="Сменить тему">
               ${renderThemeIconSvg()}
             </button>
@@ -2877,7 +3332,6 @@
                   ? `<span class="status-badge paid">Оплачено</span>`
                   : `<span class="status-badge pending">Ожидание оплаты</span>`;
 
-                // Кнопка оплаты доступна только самому отправителю в своём профиле
                 const footerControlsHtml = isOwnProfile
                   ? `
                     ${statusBadgeHtml}
@@ -2959,7 +3413,6 @@
           ? Math.round((fin.paidCount / totalTr) * 100)
           : (fin.totalBudgetKop > 0 ? 100 : 0);
 
-        // Остальные переводы события (убираем переводы выбранного участника, чтобы не дублировать)
         const otherTransfers = vp
           ? fin.transfers.filter(t => t.fromId !== vp.id && t.toId !== vp.id)
           : fin.transfers;
@@ -3195,7 +3648,6 @@
         });
       }
 
-      /* --- Modal 1: Create Event --- */
       function openCreateEventDrawer() {
         document.getElementById('evTitleInput').value = '';
         document.getElementById('evDateInput').value = todayISO();
@@ -3322,7 +3774,6 @@
         }
       }
 
-      /* --- Modal 2: Edit & Delete Event (Organizer Only) --- */
       function openEditEventDrawer() {
         const ev = state.activeEvent;
         if (!ev) return;
@@ -3393,7 +3844,6 @@
         });
       }
 
-      /* --- Modal 3: Add / Edit Expense --- */
       function buildEqualSplits(totalKop, selectedIds) {
         const result = {};
         if (!selectedIds.length) return result;
@@ -3713,7 +4163,6 @@
         });
       }
 
-      /* --- Toggle Paid Transfer (ONLY for own outgoing transfers) --- */
       async function toggleTransferPaid(tIndex) {
         const ev = state.activeEvent;
         if (!ev) return;
@@ -3754,7 +4203,6 @@
         }
       }
 
-      /* --- Modal 4: Participant & SBP Edit / Add --- */
       function openParticipantDrawer(participantId = null) {
         const ev = state.activeEvent;
         if (!ev) return;
@@ -3891,7 +4339,6 @@
         });
       }
 
-      /* --- Copy Chat Summary --- */
       function copyChatReport() {
         const ev = state.activeEvent;
         if (!ev) return;
@@ -3934,6 +4381,8 @@
             state.theme = state.theme === 'dark' ? 'light' : 'dark';
             try { localStorage.setItem(LS_THEME, state.theme); } catch (err) {}
             render();
+          } else if (action === 'open-tutorial') {
+            openTutorialStories(0);
           } else if (action === 'open-profile-modal') {
             document.getElementById('demoUserNameInput').value = state.user.fullName;
             document.getElementById('profileModalDesc').textContent = state.user.isTelegram
@@ -3996,6 +4445,20 @@
             openParticipantDrawer(target.dataset.pid);
           } else if (action === 'open-add-participant') {
             openParticipantDrawer(null);
+          }
+        });
+
+        // Stories tutorial controls (tap right = next, tap left = prev, close button = exit)
+        document.getElementById('closeStoriesBtn').addEventListener('click', closeTutorialStories);
+        document.getElementById('storyPrevBtn').addEventListener('click', prevStorySlide);
+        document.getElementById('storyNextBtn').addEventListener('click', nextStorySlide);
+        document.getElementById('storiesStage').addEventListener('click', e => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          if (clickX < rect.width * 0.35) {
+            prevStorySlide();
+          } else {
+            nextStorySlide();
           }
         });
 
@@ -4088,7 +4551,7 @@
           showToast('Имя обновлено');
         });
 
-        // Global Modal Close & Escape key
+        // Global Modal Close & Keyboard navigation
         document.querySelectorAll('[data-close-modal]').forEach(btn => {
           btn.addEventListener('click', () => closeModal(btn.dataset.closeModal));
         });
@@ -4100,12 +4563,17 @@
         });
 
         document.addEventListener('keydown', e => {
+          if (state.storyOpen) {
+            if (e.key === 'Escape') closeTutorialStories();
+            else if (e.key === 'ArrowRight') nextStorySlide();
+            else if (e.key === 'ArrowLeft') prevStorySlide();
+            return;
+          }
           if (e.key === 'Escape') {
             document.querySelectorAll('.modal-backdrop.open').forEach(m => m.classList.remove('open'));
           }
         });
 
-        // Telegram theme change listener
         if (tg && typeof tg.onEvent === 'function') {
           tg.onEvent('themeChanged', () => {
             if (tg.colorScheme === 'dark' || tg.colorScheme === 'light') {
@@ -4122,6 +4590,15 @@
       async function init() {
         bindEvents();
         initRealtime();
+
+        // Auto-open tutorial stories on the very first launch (including invite links)
+        let seenTutorial = false;
+        try {
+          seenTutorial = localStorage.getItem(LS_TUTORIAL_SEEN) === '1';
+        } catch (e) {}
+        if (!seenTutorial) {
+          openTutorialStories(0);
+        }
 
         const startEventId = extractStartEventId();
         if (startEventId) {
